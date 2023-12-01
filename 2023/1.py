@@ -20,7 +20,7 @@ REVERSED_NUMBER_MAP = {
 }
 
 
-def solution(lines):
+def part_1(lines):
     sums = 0
     for line in lines:
         line = line.strip()
@@ -33,7 +33,7 @@ def solution(lines):
     return sums
 
 
-def solution2_orig(lines):
+def part_2_orig(lines):
     """
     Original solution: Find first string to replace with a number, replace it,
     then find the last string to replace by reversing the string, and replace it.
@@ -79,7 +79,7 @@ def solution2_orig(lines):
     return sums
 
 
-def solution2(lines):
+def part_2(lines):
     """
     Simpler solution: Just step through the string and keep track of the
     digits that show up in digit or word form.
@@ -105,8 +105,8 @@ def solution2(lines):
 
 if __name__ == '__main__':
     args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
+    is_part_2 = len(args) > 1 and args[1] == '2'
+    is_test = len(args) > 2 and args[2] == 't'
 
     day = os.path.basename(__file__).replace('.py', '')
     year = os.getcwd().split('/')[-1]
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
         lines = file.readlines()
 
-    if part_2:
-        print(solution2(lines))
+    if is_part_2:
+        print(part_2(lines))
     else:
-        print(solution(lines))
+        print(part_1(lines))
