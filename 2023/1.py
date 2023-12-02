@@ -105,15 +105,16 @@ def part_2(lines):
 
 if __name__ == '__main__':
     args = sys.argv
-    is_part_2 = len(args) > 1 and args[1] == '2'
-    is_test = len(args) > 2 and args[2] == 't'
+    test_only = 't' in args
+    real_only = 'r' in args
+    force_part_1 = '1' in args
 
     day = os.path.basename(__file__).replace('.py', '')
     year = os.getcwd().split('/')[-1]
     input_file_name = '%s.txt' % day
 
     if not os.path.isfile(input_file_name):
-        with open('aoc_session_cookie.txt', 'r') as cookie_file:
+        with open('../aoc_session_cookie.txt', 'r') as cookie_file:
             cookie = cookie_file.read()
 
         url = 'https://adventofcode.com/{}/day/{}/input'.format(year, day)
@@ -126,11 +127,16 @@ if __name__ == '__main__':
         with open(input_file_name, 'w+') as output:
             print(response.text.rstrip(), end='', file=output)
 
+    fn = part_1 if force_part_1 else part_2
 
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
+    if not real_only:
+        with open('%s_test.txt' % day, 'r') as file:
+            lines = file.readlines()
+            print('---Test---\n', fn(lines))
+        if not test_only:
+            print()
 
-    if is_part_2:
-        print(part_2(lines))
-    else:
-        print(part_1(lines))
+    if not test_only:
+        with open('%s.txt' % day, 'r') as file:
+            lines = file.readlines()
+            print('---Real---\n', fn(lines))
