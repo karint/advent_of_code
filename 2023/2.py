@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import sys
 
@@ -10,32 +11,16 @@ COLOR_SET ={
 }
 
 
-def parse_game(line):
-    """
-    Takes a game line and returns a tuple of (game_id, list of maps),
-    where each map contains color counts from each subset of the game.
-    """
-    [game_id_str, subsets_str] = line.strip().split(': ')
-
-    colors_per_subset = [{
-        color_str.split(' ')[1]: int(color_str.split(' ')[0])
-        for color_str in subset_str.split(', ')
-    } for subset_str in subsets_str.split('; ')]
-
-    return int(game_id_str.split(' ')[-1]), colors_per_subset
+def extract_color_counts(line):
+    return re.findall('(\d+) (%s)' % '|'.join(COLOR_SET.keys()), line)
 
 
 def part_1(lines):
     answer = 0
 
     for line in lines:
-        game_id, colors_per_subset = parse_game(line)
-
-        if all(
-            count <= COLOR_SET[color]
-            for color_counts in colors_per_subset
-            for color, count in color_counts.items()
-        ):
+        game_id = int(line.split(':')[0].split(' ')[1])
+        if all(int(count) <= COLOR_SET[color] for count, color in extract_color_counts(line)):
             answer += game_id
 
     return answer
@@ -45,16 +30,14 @@ def part_2(lines):
     answer = 0
 
     for line in lines:
-        game_id, colors_per_subset = parse_game(line)
-
-        power = 1
-        for color in COLOR_SET.keys():
-            power *= max(
-                color_counts.get(color, 0)
-                for color_counts in colors_per_subset
-            )
-
-        answer += power
+        game_id = int(line.split(':')[0].split(' ')[1])
+        matches = extract_color_counts(line)
+        max_color_counts = {
+            color: max(
+                int(count) for count, color in matches if color == match_color
+            ) for count, match_color in matches
+        }
+        answer += max_color_counts['red'] * max_color_counts['green'] * max_color_counts['blue']
 
     return answer
 
