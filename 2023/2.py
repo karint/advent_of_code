@@ -1,7 +1,7 @@
 import os
 import re
-import requests
-import sys
+
+from util import run
 
 
 COLOR_SET ={
@@ -43,39 +43,5 @@ def part_2(lines):
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    test_only = 't' in args
-    real_only = 'r' in args
-    force_part_1 = '1' in args
-
     day = os.path.basename(__file__).replace('.py', '')
-    year = os.getcwd().split('/')[-1]
-    input_file_name = '%s.txt' % day
-
-    if not os.path.isfile(input_file_name):
-        with open('../aoc_session_cookie.txt', 'r') as cookie_file:
-            cookie = cookie_file.read()
-
-        url = 'https://adventofcode.com/{}/day/{}/input'.format(year, day)
-
-        response = requests.get(
-            url=url,
-            cookies={'session': cookie},
-            headers={'User-Agent': 'get_input_script'},
-        )
-        with open(input_file_name, 'w+') as output:
-            print(response.text.rstrip(), end='', file=output)
-
-    fn = part_1 if force_part_1 else part_2
-
-    if not real_only:
-        with open('%s_test.txt' % day, 'r') as file:
-            lines = file.readlines()
-            print('---Test---\n', fn(lines))
-        if not test_only:
-            print()
-
-    if not test_only:
-        with open('%s.txt' % day, 'r') as file:
-            lines = file.readlines()
-            print('---Real---\n', fn(lines))
+    run(day, part_1, part_2)
