@@ -1,93 +1,60 @@
 import os
-import json
 import requests
 import sys
 
-from collections import defaultdict
 
-"""
-Determine which games would have been possible if the bag had been loaded with only 12 red cubes, 13 green cubes, and 14 blue cubes.
-"""
-
-SET ={
+COLOR_SET ={
     'red': 12,
     'green': 13,
     'blue': 14,
 }
 
-TOTAL = 39 # 12+13+14
+
+def parse_game(line):
+    """
+    Takes a game line and returns a tuple of (game_id, list of maps),
+    where each map contains color counts from each subset of the game.
+    """
+    [game_id_str, subsets_str] = line.strip().split(': ')
+
+    colors_per_subset = [{
+        color_str.split(' ')[1]: int(color_str.split(' ')[0])
+        for color_str in subset_str.split(', ')
+    } for subset_str in subsets_str.split('; ')]
+
+    return int(game_id_str.split(' ')[-1]), colors_per_subset
 
 
 def part_1(lines):
     answer = 0
-    maxes = {
-        'red': 0,
-        'green': 0,
-        'blue': 0,
-    }
-    for line in lines:
-        line = line.strip()
-        [game_id, rest] = line.split(': ')
-        game_id = int(game_id.split(' ')[-1])
-        games = rest.split('; ')
-
-        for game_str in games:
-            color_strs = game_str.split(', ')
-            for color_str in color_strs:
-                num, color = color_str.split(' ')
-                num = int(num)
-                if maxes[color] < num:
-                    maxes[color] = num
-
 
     for line in lines:
-        impossible = False
-        line = line.strip()
-        [game_id, rest] = line.split(': ')
-        game_id = int(game_id.split(' ')[-1])
-        games = rest.split('; ')
+        game_id, colors_per_subset = parse_game(line)
 
-        for game_str in games:
-            color_strs = game_str.split(', ')
-            for color_str in color_strs:
-                num, color = color_str.split(' ')
-                num = int(num)
-                if num > SET[color]:
-                    impossible = True
-
-        if not impossible:
+        if all(
+            count <= COLOR_SET[color]
+            for color_counts in colors_per_subset
+            for color, count in color_counts.items()
+        ):
             answer += game_id
 
     return answer
 
 
-"""
-The power of a set of cubes is equal to the numbers of red, green, and blue cubes multiplied together. The power of the minimum set of cubes in game 1 is 48. In games 2-5 it was 12, 1560, 630, and 36, respectively. Adding up these five powers produces the sum 2286.
-
-For each game, find the minimum set of cubes that must have been present. What is the sum of the power of these sets?
-"""
-
 def part_2(lines):
     answer = 0
-    for line in lines:
-        maxes = {
-            'red': 0,
-            'green': 0,
-            'blue': 0,
-        }
-        line = line.strip()
-        [game_id, rest] = line.split(': ')
-        game_id = int(game_id.split(' ')[-1])
-        games = rest.split('; ')
 
-        for game_str in games:
-            color_strs = game_str.split(', ')
-            for color_str in color_strs:
-                num, color = color_str.split(' ')
-                num = int(num)
-                if maxes[color] < num:
-                    maxes[color] = num
-        answer += maxes['red'] * maxes['green'] * maxes['blue']
+    for line in lines:
+        game_id, colors_per_subset = parse_game(line)
+
+        power = 1
+        for color in COLOR_SET.keys():
+            power *= max(
+                color_counts.get(color, 0)
+                for color_counts in colors_per_subset
+            )
+
+        answer += power
 
     return answer
 
