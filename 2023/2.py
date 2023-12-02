@@ -33,7 +33,7 @@ def part_2(lines):
         game_id = int(line.split(':')[0].split(' ')[1])
         matches = extract_color_counts(line)
         max_color_counts = {
-            color: max(
+            match_color: max(
                 int(count) for count, color in matches if color == match_color
             ) for count, match_color in matches
         }
