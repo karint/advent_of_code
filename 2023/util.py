@@ -4,6 +4,23 @@ import requests
 import sys
 
 
+def get_adjacent_coords(x, y):
+    """
+    Given x and y, returns a list of tuples of the
+    8 adjacent coordinates.
+    """
+    return [
+        (x - 1, y - 1),
+        (x - 1, y),
+        (x - 1, y + 1),
+        (x, y - 1),
+        (x, y + 1),
+        (x + 1, y - 1),
+        (x + 1, y),
+        (x + 1, y + 1),
+    ]
+
+
 def run(day, part_1_fn, part_2_fn):
     """
     - Automatically pulls input data and saves it to <day>.txt
