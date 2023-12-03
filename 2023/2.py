@@ -1,43 +1,48 @@
+import math
 import os
 import re
 
+from collections import defaultdict
 from util import run
 
 
-COLOR_SET ={
-    'red': 12,
-    'green': 13,
-    'blue': 14,
-}
+COLOR_SET = dict(red=12, green=13, blue=14)
 
 
 def extract_color_counts(line):
-    return re.findall('(\d+) (%s)' % '|'.join(COLOR_SET.keys()), line)
+    """
+    Returns map of color -> list of ints representing counts from various subsets.
+    """
+    color_map = defaultdict(list)
+    matches = re.findall('(\d+) (%s)' % '|'.join(COLOR_SET.keys()), line)
+    for count_str, color in matches:
+         color_map[color].append(int(count_str))
+    return color_map
 
 
 def part_1(lines):
     answer = 0
-
     for line in lines:
         game_id = int(line.split(':')[0].split(' ')[1])
-        if all(int(count) <= COLOR_SET[color] for count, color in extract_color_counts(line)):
+        color_map = extract_color_counts(line)
+        if all(
+            count <= COLOR_SET[color]
+            for color, counts in color_map.items()
+            for count in counts
+        ):
             answer += game_id
-
     return answer
 
 
 def part_2(lines):
     answer = 0
-
     for line in lines:
-        matches = extract_color_counts(line)
+        color_map = extract_color_counts(line)
         max_color_counts = {
-            match_color: max(
-                int(count) for count, color in matches if color == match_color
-            ) for count, match_color in matches
+            color: max(counts)
+            for color, counts in color_map.items()
         }
-        answer += max_color_counts['red'] * max_color_counts['green'] * max_color_counts['blue']
-
+        answer += math.prod(max_color_counts.values())
     return answer
 
 
