@@ -1,5 +1,6 @@
 import os
 import json
+import math
 import re
 import requests
 
@@ -9,55 +10,34 @@ from util import run
 
 def part_1(lines):
     answer = 0
-    all_winning = set()
     for line in lines:
-        line = line.strip()
-        line = line.replace('  ', ' ')
-        card, nums = line.split(": ")
-        winning, mine = nums.split(' | ')
-        winning = winning.split(' ')
-        all_winning.update(winning)
+        num_strs = line.split(": ")[1]
+        winning, card = num_strs.split(' | ')
 
-    for line in lines:
-        line = line.strip()
-        line = line.replace('  ', ' ')
-        card, nums = line.split(": ")
-        winning, mine = nums.split(' | ')
-        winning = winning.split(' ')
-        mine = mine.split(' ')
-        overlap = [num for num in mine if num in winning]
-        x = 0
-        if overlap:
-            x = 1
+        winning = set(re.findall('(\d+)', winning))
+        card = set(re.findall('(\d+)', card))
 
-        for i in range(len(overlap) - 1):
-            x = x*2
-        answer += x
+        overlap = len(winning & card)
+        answer += (1 if overlap else 0) * math.pow(2, overlap - 1)
         
     return answer
 
 
 def part_2(lines):
     answer = 0
-    cards = []
-    winnings = []
-    for line in lines:
-        line = line.strip()
-        line = line.replace('  ', ' ')
-        card, nums = line.split(": ")
-        winning, mine = nums.split(' | ')
-        winnings.append(winning.split(' '))
-        cards.append(mine.split(' '))
-
-    count = 0
     copy_counts = defaultdict(int)
+    for i, line in enumerate(lines):
+        num_strs = line.split(": ")[1]
+        winning, card = num_strs.split(' | ')
 
-    for i, orig_card in enumerate(cards):
-        matching = len([num for num in orig_card if num in winnings[i]])
+        winning = set(re.findall('(\d+)', winning))
+        card = set(re.findall('(\d+)', card))
+
+        matching = len(winning & card)
         for j in range(matching):
-            copy_counts[i+j+1] += 1 + copy_counts[i]
+            copy_counts[i + j + 1] += 1 + copy_counts[i]
 
-    return sum(copy_counts.values()) + len(cards)
+    return sum(copy_counts.values()) + len(lines)
 
 
 if __name__ == '__main__':
