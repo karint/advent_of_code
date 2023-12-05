@@ -1,7 +1,5 @@
 import os
-import json
 import re
-import requests
 
 from collections import defaultdict
 from util import get_adjacent_coords, run
