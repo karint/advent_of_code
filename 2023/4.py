@@ -9,7 +9,7 @@ from util import run
 
 
 def parse_input(line, callback):
-    num_strs = line.split(": ")[1]
+    num_strs = line.split(': ')[1]
     winning, card = num_strs.split(' | ')
     winning = set(re.findall('(\d+)', winning))
     card = set(re.findall('(\d+)', card))
