@@ -1,58 +1,24 @@
+import math
 import os
-import json
 import re
 
-from collections import defaultdict
-from util import run
+from util import find_ints, run
+
+
+def get_wins(time, record):
+    return sum(1 if speed * (time - speed) > record else 0 for speed in range(time))
 
 
 def part_1(lines):
-    answer = 1
-    speed = 0
-    times = None
-    dists = None
-    for line in lines:
-        line = line.strip()
-        if line.startswith('Time'):
-            times = map(int, re.findall('(\d+)', line))
-        if line.startswith('Dist'):
-            records = list(map(int, re.findall('(\d+)', line)))
-
-    for i, time in enumerate(times):
-        record = records[i]
-        win = 0
-        for j in range(time):
-            speed = j
-            dist = speed * (time - j)
-            if dist > record:
-                win += 1
-        answer *= win
-
-    return answer
+    times = map(int, find_ints(lines[0]))
+    records = map(int, find_ints(lines[1]))
+    return math.prod(get_wins(time, record) for time, record in zip(times, records))
 
 
 def part_2(lines):
-    answer = 1
-    speed = 0
-    times = None
-    dists = None
-    for line in lines:
-        line = line.strip()
-        if line.startswith('Time'):
-            time = int(''.join(re.findall('(\d+)', line)))
-        if line.startswith('Dist'):
-            record = int(''.join(re.findall('(\d+)', line)))
-
-    wins = 0
-    for j in range(time):
-        speed = j
-        dist = speed * (time - j)
-        if dist > record:
-            wins += 1
-
-    return wins
-
-
+    time = int(''.join(find_ints(lines[0])))
+    record = int(''.join(find_ints(lines[1])))
+    return get_wins(time, record)
 
 
 if __name__ == '__main__':

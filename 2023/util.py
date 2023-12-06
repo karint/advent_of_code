@@ -83,6 +83,10 @@ class Direction:
     UP = 'UP'
 
 
+def find_ints(line):
+    return re.findall('(\d+)', line)
+
+
 def get_manhattan_distance(coord_1, coord_2):
     dx = abs(coord_1[0] - coord_2[0])
     dy = abs(coord_1[1] - coord_2[1])
