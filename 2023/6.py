@@ -2,7 +2,7 @@ import math
 import os
 import re
 
-from util import find_ints, run
+from util import find_digits, run
 
 
 def get_wins(time, record):
@@ -10,14 +10,14 @@ def get_wins(time, record):
 
 
 def part_1(lines):
-    times = map(int, find_ints(lines[0]))
-    records = map(int, find_ints(lines[1]))
+    times = find_digits(lines[0])
+    records = find_digits(lines[1])
     return math.prod(get_wins(time, record) for time, record in zip(times, records))
 
 
 def part_2(lines):
-    time = int(''.join(find_ints(lines[0])))
-    record = int(''.join(find_ints(lines[1])))
+    time = int(''.join(find_digits(lines[0], cast_to=str)))
+    record = int(''.join(find_digits(lines[1], cast_to=str)))
     return get_wins(time, record)
 
 

@@ -83,8 +83,8 @@ class Direction:
     UP = 'UP'
 
 
-def find_ints(line):
-    return re.findall('(\d+)', line)
+def find_digits(line, cast_to=int):
+    return map(cast_to, re.findall('(\d+)', line))
 
 
 def get_manhattan_distance(coord_1, coord_2):
