@@ -112,18 +112,13 @@ def part_2(lines):
 
     # Approach will be to track the spans still viable from initial seed ranges
     # at each source category. At the end, the lowest viable location span will
-    # contain the minimum location as it's range start.
+    # contain the minimum location as its range start.
     possible_span_value_ranges = set(seed_ranges)
-
     for name, curr_map in zip(names, map_dicts):
         new_ranges = map_ranges_to_destination(possible_span_value_ranges, curr_map)
         possible_span_value_ranges = new_ranges
 
-    min_location = None
-    for start, _ in possible_span_value_ranges:
-        if min_location is None or start < min_location:
-            min_location = start
-    return min_location
+    return sorted(possible_span_value_ranges)[0][0]
 
 
 if __name__ == '__main__':
