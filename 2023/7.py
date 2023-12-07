@@ -5,126 +5,87 @@ import re
 from collections import Counter, defaultdict
 from util import find_digits, run
 
-ORDER = 'AKQJT98765432'
-ORDER = 'AKQT98765432J'
+WILDCARD = 'J'
+
+
+def get_total_winnings(lines, get_strength_fns, order):
+    ranks = defaultdict(list)
+    for line in lines:
+        line = line.strip()
+        hand, bid = line.split(' ')
+        counts = Counter(hand)
+        strength_fns = get_strength_fns(counts)
+
+        for i, fn in enumerate(strength_fns):
+            if fn(counts):
+                ranks[i].append((hand, int(bid)))
+                break
+
+    total = 0
+    rank = len(lines)
+    for i in range(max(ranks.keys()) + 1):
+        all_hands_at_rank = ranks[i]
+
+        if not all_hands_at_rank:
+            continue
+
+        # Break ties
+        all_hands_at_rank.sort(key=lambda tup: [
+            order.index(tup[0][i]) for i in range(len(tup[0]))
+        ])
+
+        for hand, bid in all_hands_at_rank:
+            total += rank * bid
+            rank -= 1
+
+    return total
 
 
 def part_1(lines):
-    answer = 0
-    ranks = defaultdict(list)
-    for line in lines:
-        line = line.strip()
-        hand, bid = line.split(' ')
-        counts = Counter(hand)
-
-        if max(counts.values()) == 5:
-            ranks[1].append((hand, int(bid)))
-        elif max(counts.values()) == 4:
-            ranks[2].append((hand, int(bid)))
-        elif len(counts.values()) == 2:
-            ranks[3].append((hand, int(bid)))
-        elif max(counts.values()) == 3:
-            ranks[4].append((hand, int(bid)))
-        elif sorted(counts.values()) == [1, 2, 2]:
-            ranks[5].append((hand, int(bid)))
-        elif sorted(counts.values()) == [1, 1, 1, 2]:
-            ranks[6].append((hand, int(bid)))
-        else:
-            ranks[7].append((hand, int(bid)))
-
-    # Break ties
-    total = 0
-    rank = len(lines)
-    for i in range(1, 8):
-        all_hands = ranks[i]
-        if not all_hands:
-            continue
-
-        def rank_hand(tup):
-            return (
-                ORDER.index(tup[0][0]),
-                ORDER.index(tup[0][1]),
-                ORDER.index(tup[0][2]),
-                ORDER.index(tup[0][3]),
-                ORDER.index(tup[0][4]),
-            )
-
-
-        all_hands.sort(key=rank_hand)
-
-        for hand, bid in all_hands:
-            print(rank, hand, bid)
-            total += rank * bid
-            rank -= 1
-
-    return total
+    def get_strength_fns(counts):
+        return [
+            lambda counts: max(counts.values()) == 5,  # 5 of a kind
+            lambda counts: max(counts.values()) == 4,  # 4 of a kind
+            lambda counts: len(counts.values()) == 2,  # Full house
+            lambda counts: max(counts.values()) == 3,  # 3 of a kind
+            lambda counts: sorted(counts.values()) == [1, 2, 2],  # Two pair
+            lambda counts: sorted(counts.values()) == [1, 1, 1, 2],  # One pair
+            lambda counts: True,  # Nothing
+        ]
+    return get_total_winnings(lines, get_strength_fns, 'AKQJT98765432')
 
 
 def part_2(lines):
-    answer = 0
-    ranks = defaultdict(list)
-    for line in lines:
-        line = line.strip()
-        hand, bid = line.split(' ')
-        counts = Counter(hand)
-        non_j_dups = Counter(hand.replace('J', ''))
-        num_wild = counts.get('J', 0)
-
-        if hand == 'JJJJJ':
-            ranks[1].append((hand, int(bid)))
-        elif max(non_j_dups.values()) + num_wild == 5:
-            ranks[1].append((hand, int(bid)))
-        elif max(non_j_dups.values()) + num_wild == 4:
-            ranks[2].append((hand, int(bid)))
-        elif (
-            sorted(counts.values()) == [2, 3] or
-            (sorted(counts.values()) == [1, 2, 2] and num_wild >= 1)
-        ):
-            # Full house
-            ranks[3].append((hand, int(bid)))
-        elif max(non_j_dups.values()) + num_wild == 3:
-            # 3 kind
-            ranks[4].append((hand, int(bid)))
-        elif (
-            sorted(counts.values()) == [1, 2, 2] or
-            (sorted(counts.values()) == [1, 1, 1, 2] and num_wild > 1)
-        ):
-            # Two pair
-            ranks[5].append((hand, int(bid)))
-        elif max(non_j_dups.values()) == 2 or 'J' in hand:
-            # One pair
-            ranks[6].append((hand, int(bid)))
-        else:
-            ranks[7].append((hand, int(bid)))
-
-    # print(json.dumps(ranks, indent=2))
-
-    # Break ties
-    total = 0
-    rank = len(lines)
-    for i in range(1, 8):
-        all_hands = ranks[i]
-        if not all_hands:
-            continue
-
-        def rank_hand(tup):
-            return (
-                ORDER.index(tup[0][0]),
-                ORDER.index(tup[0][1]),
-                ORDER.index(tup[0][2]),
-                ORDER.index(tup[0][3]),
-                ORDER.index(tup[0][4]),
-            )
-
-
-        all_hands.sort(key=rank_hand)
-
-        for hand, bid in all_hands:
-            total += rank * bid
-            rank -= 1
-
-    return total
-
+    def get_strength_fns(counts):
+        non_wild_counts = {k: v for k, v in counts.items() if k != WILDCARD}
+        wild_count = counts.get(WILDCARD, 0)
+        return [
+            lambda counts: (  # 5 of a kind
+                counts.get(WILDCARD) == 5 or
+                max(non_wild_counts.values()) + wild_count == 5
+            ),
+            lambda counts: (  # 4 of a kind
+                max(non_wild_counts.values()) + wild_count == 4
+            ),
+            lambda counts: (  # Full house
+                sorted(counts.values()) == [2, 3] or
+                (sorted(counts.values()) == [1, 2, 2] and wild_count >= 1)
+            ),
+            lambda counts: (  # 3 of a kind
+                max(non_wild_counts.values()) + wild_count == 3
+            ),
+            lambda counts: (  # Two pair
+                sorted(counts.values()) == [1, 2, 2] or
+                (sorted(counts.values()) == [1, 1, 1, 2] and wild_count > 1)
+            ),
+            lambda counts: (  # One pair
+                max(non_wild_counts.values()) == 2 or wild_count > 0
+            ),
+            lambda counts: (  # Nothing
+                True,
+            ),
+        ]
+    return get_total_winnings(lines, get_strength_fns, 'AKQT98765432J')
 
 
 if __name__ == '__main__':
