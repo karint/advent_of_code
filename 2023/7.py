@@ -1,9 +1,7 @@
 import os
-import json
-import re
 
 from collections import Counter, defaultdict
-from util import find_digits, run
+from util import run
 
 WILDCARD = 'J'
 
@@ -43,13 +41,15 @@ def get_total_winnings(lines, get_strength_fns, order):
 
 def part_1(lines):
     def get_strength_fns(counts):
+        max_dups = max(counts.values())
+        sorted_counts = sorted(counts.values())
         return [
-            lambda counts: max(counts.values()) == 5,  # 5 of a kind
-            lambda counts: max(counts.values()) == 4,  # 4 of a kind
-            lambda counts: len(counts.values()) == 2,  # Full house
-            lambda counts: max(counts.values()) == 3,  # 3 of a kind
-            lambda counts: sorted(counts.values()) == [1, 2, 2],  # Two pair
-            lambda counts: sorted(counts.values()) == [1, 1, 1, 2],  # One pair
+            lambda counts: max_dups == 5,  # 5 of a kind
+            lambda counts: max_dups == 4,  # 4 of a kind
+            lambda counts: sorted_counts == [2, 3],  # Full house
+            lambda counts: max_dups == 3,  # 3 of a kind
+            lambda counts: sorted_counts == [1, 2, 2],  # Two pair
+            lambda counts: sorted_counts == [1, 1, 1, 2],  # One pair
             lambda counts: True,  # Nothing
         ]
     return get_total_winnings(lines, get_strength_fns, 'AKQJT98765432')
@@ -57,29 +57,31 @@ def part_1(lines):
 
 def part_2(lines):
     def get_strength_fns(counts):
+        max_dups = max(counts.values())
+        sorted_counts = sorted(counts.values())
         non_wild_counts = {k: v for k, v in counts.items() if k != WILDCARD}
         wild_count = counts.get(WILDCARD, 0)
         return [
             lambda counts: (  # 5 of a kind
                 counts.get(WILDCARD) == 5 or
-                max(non_wild_counts.values()) + wild_count == 5
+                max_dups + wild_count == 5
             ),
             lambda counts: (  # 4 of a kind
-                max(non_wild_counts.values()) + wild_count == 4
+                max_dups + wild_count == 4
             ),
             lambda counts: (  # Full house
-                sorted(counts.values()) == [2, 3] or
-                (sorted(counts.values()) == [1, 2, 2] and wild_count >= 1)
+                sorted_counts == [2, 3] or
+                (sorted_counts == [1, 2, 2] and wild_count >= 1)
             ),
             lambda counts: (  # 3 of a kind
-                max(non_wild_counts.values()) + wild_count == 3
+                max_dups + wild_count == 3
             ),
             lambda counts: (  # Two pair
-                sorted(counts.values()) == [1, 2, 2] or
-                (sorted(counts.values()) == [1, 1, 1, 2] and wild_count > 1)
+                sorted_counts == [1, 2, 2] or
+                (sorted_counts == [1, 1, 1, 2] and wild_count > 1)
             ),
             lambda counts: (  # One pair
-                max(non_wild_counts.values()) == 2 or wild_count > 0
+                max_dups == 2 or wild_count > 0
             ),
             lambda counts: (  # Nothing
                 True,
