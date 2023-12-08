@@ -36,12 +36,10 @@ def part_1(lines):
 
 def part_2(lines):
     directions, mapping = parse_lines(lines)
-    currs = {key for key in mapping.keys() if key[-1] == 'A'}
-    loop_lengths = {
-        curr: find_num_steps(curr, directions, mapping, lambda curr: curr[-1] == 'Z')
-        for curr in currs
-    }
-    return math.lcm(*loop_lengths.values())
+    return math.lcm(*[
+        find_num_steps(curr, directions, mapping, lambda curr: curr[-1] == 'Z')
+        for curr in mapping.keys() if curr[-1] == 'A'
+    ])
 
 
 if __name__ == '__main__':
