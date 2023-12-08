@@ -1,72 +1,46 @@
 import os
-import json
-import re
 import math
+import re
 
-from collections import defaultdict
-from util import find_digits, run
+from util import run
 
 
-def part_1(lines):
-    steps = 0
+def parse_lines(lines):
     directions = None
     mapping = {}
     for i, line in enumerate(lines):
         line = line.strip()
-        if not line:
-            continue
         if i == 0:
             directions = line
-        else:
-            key, tup = line.split(' = ')
-            tup = tup.replace('(', '').replace(')', '').split(', ')
-            mapping[key] = tup
+        elif '=' in line:
+            key, start, end = re.findall('(\w+)', line)
+            mapping[key] = (start, end)
+    return directions, mapping
 
-    curr = 'AAA'
+
+def find_num_steps(curr, directions, mapping, is_end_fn):
+    steps = 0
     while True:
         for direction in directions:
-            if direction == 'R':
-                index = 1
-            else:
-                index = 0
-            curr = mapping[curr][index]
+            index = 1 if direction == 'R' else 0
             steps += 1
-            if curr == 'ZZZ':
+            curr = mapping[curr][index]
+            if is_end_fn(curr):
                 return steps
 
 
+def part_1(lines):
+    directions, mapping = parse_lines(lines)
+    return find_num_steps('AAA', directions, mapping, lambda curr: curr == 'ZZZ')
+
+
 def part_2(lines):
-    directions = None
-    mapping = {}
-    for i, line in enumerate(lines):
-        line = line.strip()
-        if not line:
-            continue
-        if i == 0:
-            directions = line
-        else:
-            key, tup = line.split(' = ')
-            tup = tup.replace('(', '').replace(')', '').split(', ')
-            mapping[key] = tup
-
-    currs = {
-        key for key in mapping.keys() if key[-1] == 'A'
+    directions, mapping = parse_lines(lines)
+    currs = {key for key in mapping.keys() if key[-1] == 'A'}
+    loop_lengths = {
+        curr: find_num_steps(curr, directions, mapping, lambda curr: curr[-1] == 'Z')
+        for curr in currs
     }
-    starting_num = len(currs)
-    loop_lengths = {}
-    for curr in currs:
-        steps = 0
-        while loop_lengths.get(curr) is None:
-            for direction in directions:
-                if direction == 'R':
-                    index = 1
-                else:
-                    index = 0
-                curr = mapping[curr][index]
-                steps += 1
-                if curr[-1] == 'Z':
-                    loop_lengths[curr] = steps
-
     return math.lcm(*loop_lengths.values())
 
 
