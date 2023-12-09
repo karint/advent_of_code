@@ -4,45 +4,34 @@ import os
 from util import find_digits, run
 
 
-def get_totals(lines, index, operator_fn, list_fn):
+def get_totals(lines, reverse=False):
     total = 0
     for line in lines:
         sequences = [find_digits(line)]
-        while True:
+
+        if reverse:
+            sequences[0].reverse()
+
+        while any(val != 0 for val in sequences[-1]):
             sequences.append([
                 sequences[-1][i] - sequences[-1][i - 1]
                 for i in range(1, len(sequences[-1]))
             ])
-            if all(val == 0 for val in sequences[-1]):
-                break
-        sequences.reverse()
 
-        for i in range(len(sequences)):
-            list_fn(
-                sequences[i],
-                0 if i == 0
-                else operator_fn(sequences[i][index], sequences[i - 1][index]),
-            )
-        total += sequences[i][index]
+        sequences.reverse()
+        sequences[0].append(0)
+        for i in range(1, len(sequences)):
+            sequences[i].append(sequences[i][-1] + sequences[i - 1][-1])
+        total += sequences[i][-1]
     return total
 
 
 def part_1(lines):
-    return get_totals(
-        lines,
-        -1,
-        operator.add,
-        lambda row, val: row.append(val)
-    )
+    return get_totals(lines)
 
 
 def part_2(lines):
-    return get_totals(
-        lines,
-        0,
-        operator.sub,
-        lambda row, val: row.insert(0, val)
-    )
+    return get_totals(lines, reverse=True)
 
 
 if __name__ == '__main__':
