@@ -1,69 +1,48 @@
+import operator
 import os
-import json
-import re
 
-from collections import defaultdict
 from util import find_digits, run
 
 
-def part_1(lines):
-    hists = []
+def get_totals(lines, index, operator_fn, list_fn):
+    total = 0
     for line in lines:
-        diffs = []
-        line = line.strip()
-        nums = list(find_digits(line))
-        diffs.append(nums)
-        while any(num != 0 for num in nums):
-            diff_row = []
-            for i, num in enumerate(nums):
-                if i == len(nums) - 1:
-                    continue
-                diff_row.append(nums[i+1] - num)
-            diffs.append(diff_row)
-            nums = diff_row
+        sequences = [find_digits(line)]
+        while True:
+            sequences.append([
+                sequences[-1][i] - sequences[-1][i - 1]
+                for i in range(1, len(sequences[-1]))
+            ])
+            if all(val == 0 for val in sequences[-1]):
+                break
+        sequences.reverse()
 
-        # Calc hist
-        diffs.reverse()
-        for i in range(len(diffs)):
-            row = diffs[i]
-            if i == 0:
-                row += [0]
-            else:
-                row.append(diffs[i-1][-1] + row[-1])
-        hists.append(diffs[-1][-1])
+        for i in range(len(sequences)):
+            list_fn(
+                sequences[i],
+                0 if i == 0
+                else operator_fn(sequences[i][index], sequences[i - 1][index]),
+            )
+        total += sequences[i][index]
+    return total
 
-    return sum(hists)
+
+def part_1(lines):
+    return get_totals(
+        lines,
+        -1,
+        operator.add,
+        lambda row, val: row.append(val)
+    )
 
 
 def part_2(lines):
-    hists = []
-    for line in lines:
-        diffs = []
-        line = line.strip()
-        nums = list(find_digits(line))
-        diffs.append(nums)
-        while any(num != 0 for num in nums):
-            diff_row = []
-            for i, num in enumerate(nums):
-                if i == len(nums) - 1:
-                    continue
-                diff_row.append(nums[i+1] - num)
-            diffs.append(diff_row)
-            nums = diff_row
-
-        # Calc hist
-        diffs.reverse()
-        last_row = None
-        for i in range(len(diffs)):
-            row = diffs[i]
-            if i == 0:
-                row = [0] + row
-            else:
-                row = [row[0] - last_row[0]] + row
-            last_row = row
-        hists.append(row[0])
-
-    return sum(hists)
+    return get_totals(
+        lines,
+        0,
+        operator.sub,
+        lambda row, val: row.insert(0, val)
+    )
 
 
 if __name__ == '__main__':

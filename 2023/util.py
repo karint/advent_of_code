@@ -84,7 +84,7 @@ class Direction:
 
 
 def find_digits(line, cast_to=int):
-    return map(cast_to, re.findall('(-?\d+)', line))
+    return list(map(cast_to, re.findall('(-?\d+)', line.strip())))
 
 
 def get_manhattan_distance(coord_1, coord_2):
