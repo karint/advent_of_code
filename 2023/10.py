@@ -22,39 +22,27 @@ OPPOSITES = {
     Direction.UP: Direction.DOWN,
 }
 
+class NeighborType:
+    GROUND = 'GROUND'
+    PIPE = 'PIPE'
 
-def get_neighbors(x, y, grid, valid_symbols):
-    """
-    Returns a set of (direction, x, y) tuples of valid neighbors.
-    Direction indicates what direction the neighbor is relative
-    to the given coords.
-    """
-    symbol = grid[y][x]
-    coords_to_check = [
+NEIGHBOR_TYPES = {
+    NeighborType.GROUND: {'.'},
+    NeighborType.PIPE: set(CONNECTORS.keys()),
+}
+
+
+def get_cardinal_coords(x, y):
+    return [
         (Direction.UP, x, y - 1),
         (Direction.DOWN, x, y + 1),
         (Direction.LEFT, x - 1, y),
         (Direction.RIGHT, x + 1, y),
     ]
 
-    neighbors = set()
-    for direction, x, y in coords_to_check:
-        try:
-            neighbor_symbol = grid[y][x]
-        except IndexError:
-            continue
 
-        if (
-            neighbor_symbol in valid_symbols and
-            OPPOSITES[direction] in CONNECTORS[neighbor_symbol]
-        ):
-            neighbors.add((direction, x, y))
-
-    return neighbors
-
-
-def part_1(lines):
-    # Construct grid and find starting coords
+def initialize_grid(lines):
+    # Initialize grid and find starting coords
     grid = []
     start_x, start_y = None, None
     for y, line in enumerate(lines):
@@ -63,13 +51,48 @@ def part_1(lines):
             start_x, start_y = row.index(START_SYMBOL), y
         grid.append(row)
 
-    # Determine symbol of starting coord
-    neighbors = get_neighbors(start_x, start_y, grid, CONNECTORS.keys())
-    directions_of_neighbors = {n[0] for n in neighbors}
+    # Determine symbol of starting coord and replace it in the grid
+    neighbors = get_neighbors(start_x, start_y, grid, NeighborType.PIPE)
+    cardinal_map = {
+        (x, y): direction for direction, x, y in get_cardinal_coords(start_x, start_y)
+    }
+    directions_of_neighbors = {
+        cardinal_map[(x, y)] for x, y in neighbors
+    }
     for sym, dirs in CONNECTORS.items():
         if dirs == directions_of_neighbors:
             grid[start_y][start_x] = sym
             break
+
+    return start_x, start_y, grid
+
+
+def get_neighbors(x, y, grid, neighbor_type):
+    """
+    Returns a set of (x, y) tuples of valid neighbors.
+    """
+    symbol = grid[y][x]
+
+    neighbors = set()
+    for direction, x, y in get_cardinal_coords(x, y):
+        if y < 0 or y >= len(grid) or x < 0 or x >= len(grid[0]):
+            continue
+
+        if neighbor_type == NeighborType.PIPE and symbol in CONNECTORS and direction not in CONNECTORS[symbol]:
+            continue
+
+        neighbor_symbol = grid[y][x]
+        if (
+            neighbor_symbol in NEIGHBOR_TYPES[neighbor_type] and
+            (neighbor_type == NeighborType.GROUND or OPPOSITES[direction] in CONNECTORS[neighbor_symbol])
+        ):
+            neighbors.add((x, y))
+
+    return neighbors
+
+
+def part_1(lines):
+    start_x, start_y, grid = initialize_grid(lines)
 
     # Traverse the loop
     steps = -1
@@ -80,124 +103,62 @@ def part_1(lines):
         new_curr_coords = set()
         for x, y in curr_coords:
             visited_coords.add((x, y))
-            neighbors = get_neighbors(x, y, grid, CONNECTORS.keys())
-            neighbor_coords = {(n_x, n_y) for _, n_x, n_y in neighbors}
-            new_curr_coords.update(neighbor_coords - visited_coords)
+            neighbors = get_neighbors(x, y, grid, NeighborType.PIPE)
+            new_curr_coords.update(neighbors - visited_coords)
         curr_coords = new_curr_coords
 
     return steps
 
 
-def get_ground_neighbors(x, y, grid):
-    neighbors = set()
-    if x > 0:
-        coords = (x - 1, y)
-        if grid[coords[1]][coords[0]] == '.':
-            neighbors.add(coords)
-    if y > 0:
-        coords = (x, y - 1)
-        if grid[coords[1]][coords[0]] == '.':
-            neighbors.add(coords)
-    if x < len(grid[0]) - 1:
-        coords = (x + 1, y)
-        if grid[coords[1]][coords[0]] == '.':
-            neighbors.add(coords)
-    if y < len(grid) - 1:
-        coords = (x, y + 1)
-        if grid[coords[1]][coords[0]] == '.':
-            neighbors.add(coords)
-
-    return neighbors
-
 def part_2(lines):
-    answer = 0
-    grid = []
-    start_x, start_y = None, None
+    start_x, start_y, grid = initialize_grid(lines)
 
-    # Create grid and find start
-    for y, line in enumerate(lines):
-        row = list(line.strip())
-        grid.append(row)
-        for x, char in enumerate(row):
-            if char == 'S':
-                start_x, start_y = x, y
+    # Traverse the loop, recording all the coords of loop pipes
+    loop_pipe_coords = set()
+    curr_coords = set([(start_x, start_y)])
+    while curr_coords:
+        new_curr_coords = set()
+        for x, y in curr_coords:
+            loop_pipe_coords.add((x, y))
+            neighbors = get_neighbors(x, y, grid, NeighborType.PIPE)
+            new_curr_coords.update(neighbors - loop_pipe_coords)
+        curr_coords = new_curr_coords
 
-    # Figure out starting symbol
-    up = grid[start_y - 1][start_x] if start_y > 0 else '.'
-    down = grid[start_y + 1][start_x] if start_y < len(grid) - 1 else '.'
-    left = grid[start_y][start_x - 1] if start_x > 0 else '.'
-    right = grid[start_y][start_x + 1] if start_x < len(grid[0]) - 1 else '.'
-
-    connected_to = set()
-    if up != '.' and Direction.DOWN in CONNECTORS[up]:
-        connected_to.add(Direction.UP)
-    if down != '.'  and Direction.UP in CONNECTORS[down]:
-        connected_to.add(Direction.DOWN)
-    if left != '.'  and Direction.RIGHT in CONNECTORS[left]:
-        connected_to.add(Direction.LEFT)
-    if right != '.'  and Direction.LEFT in CONNECTORS[right]:
-        connected_to.add(Direction.RIGHT)
-
-    start_symbol = None
-    for sym, dirs in CONNECTORS.items():
-        if len(dirs & connected_to) == 2:
-            start_symbol = sym
-    grid[start_y][start_x] = start_symbol
-
-    # Find out what pipes are in the loop
-    visited_nodes = set()
-    curr_nodes = set([(start_x, start_y)])
-    steps = 0
-    while curr_nodes:
-        new_curr_nodes = set()
-        for x, y in curr_nodes:
-            visited_nodes.add((x, y))
-            neighbors = get_neighbors(x, y, grid, CONNECTORS.keys())
-            for _, n_x, n_y in neighbors:
-                if (n_x, n_y) not in visited_nodes:
-                    new_curr_nodes.add((n_x, n_y))
-        curr_nodes = new_curr_nodes
-
-    # Replace all junk with ground
-    all_edge_ground = set()
-    all_ground = set()
+    # Replace all junk (pipes not in the loop) with ground. Keep track also
+    # of all ground coords and all ground coords on the outer edge.
     new_grid = []
+    all_ground_coords = set()
+    all_edge_ground_coords = set()
     for y, row in enumerate(grid):
         new_row = []
         for x, char in enumerate(row):
-            is_ground = char == '.'
-            if char in CONNECTORS and (x, y) not in visited_nodes:
+            if (x, y) not in loop_pipe_coords:
                 new_row.append('.')
-                is_ground = True
+                if y == 0 or x == 0 or y == len(lines) - 1 or x == len(lines[0]) - 1:
+                    all_edge_ground_coords.add((x, y))
+                all_ground_coords.add((x, y))
             else:
                 new_row.append(char)
-            if is_ground:
-                if y == 0 or x == 0 or y == len(lines) - 1 or x == len(lines[0]) - 1:
-                    all_edge_ground.add((x, y))
-                all_ground.add((x, y))
         new_grid.append(new_row)
     grid = new_grid
 
-    # As we traverse the loop, keep track of right/ left ground spots adjacent
-    pipe_nodes = set()
-    curr_node = (start_x, start_y)
-    steps = 0
-    distances = {}
+    # As we traverse the loop, keep track of right / left ground spots adjacent
     right_ground = set()
     left_ground = set()
+    visited_coords = set()
+    curr_pipe = (start_x, start_y)
     last_pipe = (start_x, start_y + 1)
-    while curr_node is not None:
-        new_curr_nodes = set()
-        x, y = curr_node
-        g = grid
-        symbol = g[y][x]
-        pipe_nodes.add((x, y))
-        next_node = None
+    while curr_pipe is not None:
+        visited_coords.add(curr_pipe)
+        new_curr_pipes = set()
+        x, y = curr_pipe
+        symbol = grid[y][x]
+        next_pipe = None
 
-        up = g[y - 1][x] if y > 0 else None
-        down = g[y + 1][x] if y < len(g) - 1 else None
-        left = g[y][x - 1] if x > 0 else None
-        right = g[y][x + 1] if x < len(g[0]) - 1 else None
+        up = grid[y - 1][x] if y > 0 else None
+        down = grid[y + 1][x] if y < len(grid) - 1 else None
+        left = grid[y][x - 1] if x > 0 else None
+        right = grid[y][x + 1] if x < len(grid[0]) - 1 else None
 
         if up:
             coords = (x, y - 1)
@@ -212,8 +173,8 @@ def part_2(lines):
                         left_ground.add(coords)
                     else:
                         right_ground.add(coords)
-            elif Direction.DOWN in CONNECTORS[up] and Direction.UP in CONNECTORS[symbol] and coords not in pipe_nodes:
-                next_node = coords
+            elif Direction.DOWN in CONNECTORS[up] and Direction.UP in CONNECTORS[symbol] and coords not in visited_coords:
+                next_pipe = coords
 
         if down:
             coords = (x, y + 1)
@@ -228,8 +189,8 @@ def part_2(lines):
                         left_ground.add(coords)
                     else:
                         right_ground.add(coords)
-            elif Direction.UP in CONNECTORS[down] and Direction.DOWN in CONNECTORS[symbol] and coords not in pipe_nodes:
-                next_node = coords
+            elif Direction.UP in CONNECTORS[down] and Direction.DOWN in CONNECTORS[symbol] and coords not in visited_coords:
+                next_pipe = coords
 
         if left:
             coords = (x - 1, y)
@@ -244,8 +205,8 @@ def part_2(lines):
                         left_ground.add(coords)
                     else:
                         right_ground.add(coords)
-            elif Direction.RIGHT in CONNECTORS[left] and Direction.LEFT in CONNECTORS[symbol] and coords not in pipe_nodes:
-                next_node = coords
+            elif Direction.RIGHT in CONNECTORS[left] and Direction.LEFT in CONNECTORS[symbol] and coords not in visited_coords:
+                next_pipe = coords
 
         if right:
             coords = (x + 1, y)
@@ -260,20 +221,20 @@ def part_2(lines):
                         left_ground.add(coords)
                     else:
                         right_ground.add(coords)
-            elif Direction.LEFT in CONNECTORS[right] and Direction.RIGHT in CONNECTORS[symbol] and coords not in pipe_nodes:
-                next_node = coords
+            elif Direction.LEFT in CONNECTORS[right] and Direction.RIGHT in CONNECTORS[symbol] and coords not in visited_coords:
+                next_pipe = coords
 
-        last_pipe = curr_node
-        curr_node = next_node
+        last_pipe = curr_pipe
+        curr_pipe = next_pipe
 
     # Find ground that touches the outside (without squeezing between pipes)
-    outer_ground = set(all_edge_ground)
-    for g_x, g_y in all_edge_ground:
+    outer_ground = set(all_edge_ground_coords)
+    for g_x, g_y in all_edge_ground_coords:
         currs = set([(g_x, g_y)])
         while currs:
             new_currs = set()
             for x, y in currs:
-                neighbors = get_ground_neighbors(x, y, grid)
+                neighbors = get_neighbors(x, y, grid, NeighborType.GROUND)
                 for n_x, n_y in neighbors:
                     if (n_x, n_y) not in outer_ground:
                         new_currs.add((n_x, n_y))
@@ -294,14 +255,15 @@ def part_2(lines):
         while currs:
             new_currs = set()
             for x, y in currs:
-                neighbors = get_ground_neighbors(x, y, grid)
+                neighbors = get_neighbors(x, y, grid, NeighborType.GROUND)
                 for n_x, n_y in neighbors:
                     if (n_x, n_y) not in outer_ground:
                         new_currs.add((n_x, n_y))
                 outer_ground.update(neighbors)
             currs = new_currs
 
-    return len(all_ground) - len(outer_ground)
+    # Finally return the diff of total ground tiles minus those that touch the outside
+    return len(all_ground_coords) - len(outer_ground)
 
 
 
