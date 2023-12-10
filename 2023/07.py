@@ -1,3 +1,7 @@
+"""
+Part 1: Given a list of poker hands and bids, calculate total winnings.
+Part 2: Jokers are wildcards.
+"""
 import os
 
 from collections import Counter, defaultdict

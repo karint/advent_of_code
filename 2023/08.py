@@ -1,3 +1,11 @@
+"""
+Part 1:
+Find how many steps through a map it takes to get from AAA to ZZZ.
+
+Part 2:
+Find how many steps it takes for all ghosts starting at a node ending
+in A to end at a node ending in Z.
+"""
 import os
 import math
 import re

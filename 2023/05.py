@@ -1,3 +1,11 @@
+"""
+Part 1:
+Navigate through an almanac (series of maps) to find lowest
+location number of a set of seeds.
+
+Part 2:
+Seeds are now massive ranges. Make it efficient.
+"""
 import os
 import re
 

@@ -1,3 +1,8 @@
+"""
+Red, Green, and Blue cubes in a bag.
+Part 1: Which games were possible with predefined counts?
+Part 2: For each game, what was the fewest number of cubes per color?
+"""
 import math
 import os
 import re

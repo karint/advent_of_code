@@ -1,3 +1,7 @@
+"""
+Part 1: Predict the next number in a sequence of values.
+Part 2: Predict the number before a sequence of values.
+"""
 import operator
 import os
 

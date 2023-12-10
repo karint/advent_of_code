@@ -1,3 +1,7 @@
+"""
+Part 1: Find the farthest pipe from a starting point within a loop of pipes.
+Part 2: Find the area enclosed by the pipe loop.
+"""
 import os
 
 from collections import defaultdict

@@ -1,3 +1,11 @@
+"""
+Part 1:
+Find how many points a pile of scratchcards is worth.
+
+Part 2:
+Winning numbers produce copies of scratchcards.
+Find number of scratchcards total.
+"""
 import math
 import os
 import re

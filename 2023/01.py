@@ -1,3 +1,7 @@
+"""
+Part 1: Find frst and last digits in a string, concatenate them, then sum.
+Part 2: The digits can be spelled-out words.
+"""
 import os
 
 from util import run

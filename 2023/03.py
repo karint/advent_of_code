@@ -1,3 +1,7 @@
+"""
+Part 1: Find numbers adjacent to a symbol.
+Part 2: Find gears with exactly 2 adjacent numbers.
+"""
 import os
 import re
 
