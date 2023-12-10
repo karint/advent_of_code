@@ -1,98 +1,91 @@
 import os
-import json
-import re
 
 from collections import defaultdict
-from util import Direction, find_digits, get_adjacent_coords, run
+from util import Direction, run
 
+
+START_SYMBOL = 'S'
 
 CONNECTORS = {
-    '|': set([Direction.UP, Direction.DOWN]),
+    '|': set([Direction.DOWN, Direction.UP]),
+    '7': set([Direction.DOWN, Direction.LEFT]),
+    'F': set([Direction.DOWN, Direction.RIGHT]),
     '-': set([Direction.LEFT, Direction.RIGHT]),
-    'L': set([Direction.UP, Direction.RIGHT]),
     'J': set([Direction.LEFT, Direction.UP]),
-    '7': set([Direction.LEFT, Direction.DOWN]),
-    'F': set([Direction.RIGHT, Direction.DOWN]),
+    'L': set([Direction.RIGHT, Direction.UP]),
+}
+
+OPPOSITES = {
+    Direction.DOWN: Direction.UP,
+    Direction.LEFT: Direction.RIGHT,
+    Direction.RIGHT: Direction.LEFT,
+    Direction.UP: Direction.DOWN,
 }
 
 
-class Node:
-    def __init__(self, x, y, symbol):
-        self.x = x
-        self.y = y
-        self.symbol = symbol
+def get_neighbors(x, y, grid, valid_symbols):
+    """
+    Returns a set of (direction, x, y) tuples of valid neighbors.
+    Direction indicates what direction the neighbor is relative
+    to the given coords.
+    """
+    symbol = grid[y][x]
+    coords_to_check = [
+        (Direction.UP, x, y - 1),
+        (Direction.DOWN, x, y + 1),
+        (Direction.LEFT, x - 1, y),
+        (Direction.RIGHT, x + 1, y),
+    ]
 
-    def get_neighbors(self, grid):
-        g = grid
-        up = g[self.y - 1][self.x] if self.y > 0 else '.'
-        down = g[self.y + 1][self.x] if self.y < len(g) - 1 else '.'
-        left = g[self.y][self.x - 1] if self.x > 0 else '.'
-        right = g[self.y][self.x + 1] if self.x < len(g[0]) - 1 else '.'
+    neighbors = set()
+    for direction, x, y in coords_to_check:
+        try:
+            neighbor_symbol = grid[y][x]
+        except IndexError:
+            continue
 
-        neighbors = []
-        if up != '.'  and Direction.DOWN in CONNECTORS[up] and Direction.UP in CONNECTORS[self.symbol]:
-            neighbors.append((self.x, self.y - 1))
-        if down != '.'  and Direction.UP in CONNECTORS[down] and Direction.DOWN in CONNECTORS[self.symbol]:
-            neighbors.append((self.x, self.y + 1))
-        if left != '.'  and Direction.RIGHT in CONNECTORS[left] and Direction.LEFT in CONNECTORS[self.symbol]:
-            neighbors.append((self.x - 1, self.y))
-        if right != '.'  and Direction.LEFT in CONNECTORS[right] and Direction.RIGHT in CONNECTORS[self.symbol]:
-            neighbors.append((self.x + 1, self.y,))
-        return neighbors
+        if (
+            neighbor_symbol in valid_symbols and
+            OPPOSITES[direction] in CONNECTORS[neighbor_symbol]
+        ):
+            neighbors.add((direction, x, y))
+
+    return neighbors
 
 
 def part_1(lines):
-    answer = 0
+    # Construct grid and find starting coords
     grid = []
-    nodes = {}
     start_x, start_y = None, None
-
     for y, line in enumerate(lines):
         row = list(line.strip())
+        if START_SYMBOL in row:
+            start_x, start_y = row.index(START_SYMBOL), y
         grid.append(row)
-        for x, char in enumerate(row):
-            if char == 'S':
-                start_x, start_y = x, y
-            elif char != '.':
-                nodes[(x, y)] = Node(x, y, char)
 
-    up = grid[start_y - 1][start_x] if start_y > 0 else '.'
-    down = grid[start_y + 1][start_x] if start_y < len(grid) - 1 else '.'
-    left = grid[start_y][start_x - 1] if start_x > 0 else '.'
-    right = grid[start_y][start_x + 1] if start_x < len(grid[0]) - 1 else '.'
-
-    connected_to = set()
-    if up != '.' and Direction.DOWN in CONNECTORS[up]:
-        connected_to.add(Direction.UP)
-    if down != '.'  and Direction.UP in CONNECTORS[down]:
-        connected_to.add(Direction.DOWN)
-    if left != '.'  and Direction.RIGHT in CONNECTORS[left]:
-        connected_to.add(Direction.LEFT)
-    if right != '.'  and Direction.LEFT in CONNECTORS[right]:
-        connected_to.add(Direction.RIGHT)
-
-    start_symbol = None
+    # Determine symbol of starting coord
+    neighbors = get_neighbors(start_x, start_y, grid, CONNECTORS.keys())
+    directions_of_neighbors = {n[0] for n in neighbors}
     for sym, dirs in CONNECTORS.items():
-        if len(dirs & connected_to) == 2:
-            start_symbol = sym
-    nodes[(start_x, start_y)] = Node(start_x, start_y, start_symbol)
-    grid[start_y][start_x] = start_symbol
+        if dirs == directions_of_neighbors:
+            grid[start_y][start_x] = sym
+            break
 
-    visited_nodes = set()
-    curr_nodes = set([(start_x, start_y)])
-    steps = 0
-    while curr_nodes:
-        new_curr_nodes = set()
-        for x, y in curr_nodes:
-            visited_nodes.add((x, y))
-            neighbors = nodes[(x, y)].get_neighbors(grid)
-            for n_x, n_y in neighbors:
-                if (n_x, n_y) not in visited_nodes:
-                    new_curr_nodes.add((n_x, n_y))
-        curr_nodes = new_curr_nodes
+    # Traverse the loop
+    steps = -1
+    visited_coords = set()
+    curr_coords = set([(start_x, start_y)])
+    while curr_coords:
         steps += 1
-        
-    return steps - 1
+        new_curr_coords = set()
+        for x, y in curr_coords:
+            visited_coords.add((x, y))
+            neighbors = get_neighbors(x, y, grid, CONNECTORS.keys())
+            neighbor_coords = {(n_x, n_y) for _, n_x, n_y in neighbors}
+            new_curr_coords.update(neighbor_coords - visited_coords)
+        curr_coords = new_curr_coords
+
+    return steps
 
 
 def get_ground_neighbors(x, y, grid):
@@ -119,7 +112,6 @@ def get_ground_neighbors(x, y, grid):
 def part_2(lines):
     answer = 0
     grid = []
-    nodes = {}
     start_x, start_y = None, None
 
     # Create grid and find start
@@ -129,8 +121,6 @@ def part_2(lines):
         for x, char in enumerate(row):
             if char == 'S':
                 start_x, start_y = x, y
-            elif char != '.':
-                nodes[(x, y)] = Node(x, y, char)
 
     # Figure out starting symbol
     up = grid[start_y - 1][start_x] if start_y > 0 else '.'
@@ -152,7 +142,6 @@ def part_2(lines):
     for sym, dirs in CONNECTORS.items():
         if len(dirs & connected_to) == 2:
             start_symbol = sym
-    nodes[(start_x, start_y)] = Node(start_x, start_y, start_symbol)
     grid[start_y][start_x] = start_symbol
 
     # Find out what pipes are in the loop
@@ -163,8 +152,8 @@ def part_2(lines):
         new_curr_nodes = set()
         for x, y in curr_nodes:
             visited_nodes.add((x, y))
-            neighbors = nodes[(x, y)].get_neighbors(grid)
-            for n_x, n_y in neighbors:
+            neighbors = get_neighbors(x, y, grid, CONNECTORS.keys())
+            for _, n_x, n_y in neighbors:
                 if (n_x, n_y) not in visited_nodes:
                     new_curr_nodes.add((n_x, n_y))
         curr_nodes = new_curr_nodes
@@ -189,7 +178,7 @@ def part_2(lines):
         new_grid.append(new_row)
     grid = new_grid
 
-    # As we traverse the loop, keep track of right/ left ground spots adjacent.
+    # As we traverse the loop, keep track of right/ left ground spots adjacent
     pipe_nodes = set()
     curr_node = (start_x, start_y)
     steps = 0
