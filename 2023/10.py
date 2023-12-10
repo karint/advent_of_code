@@ -31,6 +31,14 @@ NEIGHBOR_TYPES = {
     NeighborType.PIPE: set(CONNECTORS.keys()),
 }
 
+# Honestly I can't even really explain what this is
+LEFT_RIGHT_INFO = {
+    Direction.UP: lambda x, y: (x, y + 1, '7', 'F'),
+    Direction.DOWN: lambda x, y: (x, y - 1, 'L', 'J'),
+    Direction.LEFT: lambda x, y: (x + 1, y, 'F', 'L'),
+    Direction.RIGHT: lambda x, y: (x - 1, y, 'J', '7'),
+}
+
 
 def get_cardinal_coords(x, y):
     return [
@@ -72,19 +80,25 @@ def get_neighbors(x, y, grid, neighbor_type):
     Returns a set of (x, y) tuples of valid neighbors.
     """
     symbol = grid[y][x]
-
     neighbors = set()
     for direction, x, y in get_cardinal_coords(x, y):
         if y < 0 or y >= len(grid) or x < 0 or x >= len(grid[0]):
             continue
 
-        if neighbor_type == NeighborType.PIPE and symbol in CONNECTORS and direction not in CONNECTORS[symbol]:
+        if (
+            neighbor_type == NeighborType.PIPE and
+            symbol in CONNECTORS and
+            direction not in CONNECTORS[symbol]
+        ):
             continue
 
         neighbor_symbol = grid[y][x]
         if (
             neighbor_symbol in NEIGHBOR_TYPES[neighbor_type] and
-            (neighbor_type == NeighborType.GROUND or OPPOSITES[direction] in CONNECTORS[neighbor_symbol])
+            (
+                neighbor_type == NeighborType.GROUND or
+                OPPOSITES[direction] in CONNECTORS[neighbor_symbol]
+            )
         ):
             neighbors.add((x, y))
 
@@ -143,6 +157,7 @@ def part_2(lines):
     grid = new_grid
 
     # As we traverse the loop, keep track of right / left ground spots adjacent
+    # Note: This code is completely unreadable :)
     right_ground = set()
     left_ground = set()
     visited_coords = set()
@@ -155,73 +170,28 @@ def part_2(lines):
         symbol = grid[y][x]
         next_pipe = None
 
-        up = grid[y - 1][x] if y > 0 else None
-        down = grid[y + 1][x] if y < len(grid) - 1 else None
-        left = grid[y][x - 1] if x > 0 else None
-        right = grid[y][x + 1] if x < len(grid[0]) - 1 else None
+        cardinal_coords = get_cardinal_coords(x, y)
+        left_right_tuples = {
+            (direction, n_x, n_y, *LEFT_RIGHT_INFO[direction](x, y))
+            for (direction, n_x, n_y) in cardinal_coords
+        }
 
-        if up:
-            coords = (x, y - 1)
-            if up == '.':
-                if symbol == '7':
-                    if last_pipe == (x, y + 1):
-                        right_ground.add(coords)
-                    else:
-                        left_ground.add(coords)
-                elif symbol == 'F':
-                    if last_pipe == (x, y + 1):
-                        left_ground.add(coords)
-                    else:
-                        right_ground.add(coords)
-            elif Direction.DOWN in CONNECTORS[up] and Direction.UP in CONNECTORS[symbol] and coords not in visited_coords:
-                next_pipe = coords
+        for (direction, n_x, n_y, last_pipe_x, last_pipe_y, sym_1, sym_2) in left_right_tuples:
+            if n_y < 0 or n_y >= len(grid) or n_x < 0 or n_x >= len(grid[0]):
+                continue
 
-        if down:
-            coords = (x, y + 1)
-            if down == '.':
-                if symbol == 'L':
-                    if last_pipe == (x, y - 1):
-                        right_ground.add(coords)
-                    else:
-                        left_ground.add(coords)
-                elif symbol == 'J':
-                    if last_pipe == (x, y - 1):
-                        left_ground.add(coords)
-                    else:
-                        right_ground.add(coords)
-            elif Direction.UP in CONNECTORS[down] and Direction.DOWN in CONNECTORS[symbol] and coords not in visited_coords:
-                next_pipe = coords
-
-        if left:
-            coords = (x - 1, y)
-            if left == '.':
-                if symbol == 'F':
-                    if last_pipe == (x + 1, y):
-                        right_ground.add(coords)
-                    else:
-                        left_ground.add(coords)
-                elif symbol == 'L':
-                    if last_pipe == (x + 1, y):
-                        left_ground.add(coords)
-                    else:
-                        right_ground.add(coords)
-            elif Direction.RIGHT in CONNECTORS[left] and Direction.LEFT in CONNECTORS[symbol] and coords not in visited_coords:
-                next_pipe = coords
-
-        if right:
-            coords = (x + 1, y)
-            if right == '.':
-                if symbol == 'J':
-                    if last_pipe == (x - 1, y):
-                        right_ground.add(coords)
-                    else:
-                        left_ground.add(coords)
-                elif symbol == '7':
-                    if last_pipe == (x - 1, y):
-                        left_ground.add(coords)
-                    else:
-                        right_ground.add(coords)
-            elif Direction.LEFT in CONNECTORS[right] and Direction.RIGHT in CONNECTORS[symbol] and coords not in visited_coords:
+            coords = (n_x, n_y)
+            n_symbol = grid[n_y][n_x]
+            if n_symbol == '.':
+                if symbol == sym_1:
+                    (right_ground if last_pipe == (last_pipe_x, last_pipe_y) else left_ground).add(coords)
+                elif symbol == sym_2:
+                    (left_ground if last_pipe == (last_pipe_x, last_pipe_y) else right_ground).add(coords)
+            elif (
+                OPPOSITES[direction] in CONNECTORS[n_symbol] and
+                direction in CONNECTORS[symbol] and
+                coords not in visited_coords
+            ):
                 next_pipe = coords
 
         last_pipe = curr_pipe
@@ -264,7 +234,6 @@ def part_2(lines):
 
     # Finally return the diff of total ground tiles minus those that touch the outside
     return len(all_ground_coords) - len(outer_ground)
-
 
 
 if __name__ == '__main__':
