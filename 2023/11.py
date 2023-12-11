@@ -1,3 +1,7 @@
+"""
+Part 1: Find distance between pairs of galaxies on a grid.
+Part 2: Find distance between pairs of galaxies on a grid that are really far apart.
+"""
 import os
 
 from itertools import combinations
