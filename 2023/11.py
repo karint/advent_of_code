@@ -7,112 +7,48 @@ from itertools import combinations
 from util import run
 
 
-def part_1(lines):
+def solve(lines, galaxy_expansion):
     grid = []
     width = len(lines[0].strip())
     height = len(lines)
-    rows_with_gal = set()
-    cols_with_gal = set()
+
+    num_galaxies = 0
+    galaxy_id_to_coords = {}
+    galaxy_rows, galaxy_cols = set(), set()
     for y, line in enumerate(lines):
         line = line.strip()
-        row = []
         for x, char in enumerate(line):
             if char == '#':
-                rows_with_gal.add(y)
-                cols_with_gal.add(x)
-            row.append(char)
-        grid.append(row)
+                galaxy_rows.add(y)
+                galaxy_cols.add(x)
+                galaxy_id_to_coords[num_galaxies] = (x, y)
+                num_galaxies += 1
+        grid.append(line)
 
-    diff = 0
-    for row_index in range(height):
-        if row_index in rows_with_gal:
-            continue
+    total = 0
+    multiple = galaxy_expansion - 1
+    all_galaxy_id_pairs = combinations(range(num_galaxies), 2)
+    for start_id, end_id in all_galaxy_id_pairs:
+        start_x, start_y = galaxy_id_to_coords[start_id]
+        end_x, end_y = galaxy_id_to_coords[end_id]
 
-        grid.insert(row_index + diff, ['.'] * width)
-        diff += 1
+        for start, end, exclusive_set in [
+            (start_x, end_x, galaxy_cols),
+            (start_y, end_y, galaxy_rows),
+        ]:
+            span = range(start, end) if start < end else range(end, start)
+            num_expansions = sum(1 if i not in exclusive_set else 0 for i in span)
+            total += abs(start - end) + num_expansions * multiple
+
+    return total
 
 
-    diff = 0
-    for col_index in range(width):
-        if col_index in cols_with_gal:
-            continue
-
-        for row in grid:
-            row.insert(col_index + diff, '.')
-        diff += 1
-
-
-    num_gal = 0
-    galaxies = {}
-    for y, row in enumerate(grid):
-        for x, char in enumerate(row):
-            if char == '#':
-                galaxies[num_gal] = (x, y)
-                num_gal += 1
-
-    pairs = combinations(range(num_gal), 2)
-
-    answer = 0
-    for i, (start, end) in enumerate(pairs):
-        start_x, start_y = galaxies[start]
-        end_x, end_y = galaxies[end]
-
-        dx = abs(start_x - end_x)
-        dy = abs(start_y - end_y)
-        answer += dx + dy
-
-    return answer
+def part_1(lines):
+    return solve(lines, 2)
 
 
 def part_2(lines):
-    multiple = 1000000 - 1
-
-    grid = []
-    width = len(lines[0].strip())
-    height = len(lines)
-    rows_with_gal = set()
-    cols_with_gal = set()
-    num_gal = 0
-    galaxies = {}
-    for y, line in enumerate(lines):
-        line = line.strip()
-        row = []
-        for x, char in enumerate(line):
-            if char == '#':
-                rows_with_gal.add(y)
-                cols_with_gal.add(x)
-                galaxies[num_gal] = (x, y)
-                num_gal += 1
-            row.append(char)
-        grid.append(row)
-
-    pairs = combinations(range(num_gal), 2)
-
-    answer = 0
-
-    for i, (start, end) in enumerate(pairs):
-        start_x, start_y = galaxies[start]
-        end_x, end_y = galaxies[end]
-
-        # How many expansions are between x's
-        span = range(start_x, end_x) if start_x < end_x else range(end_x, start_x)
-        num_x_expansions = 0
-        for x in span:
-            if x not in cols_with_gal:
-                num_x_expansions += 1
-        dx = abs(start_x - end_x) + num_x_expansions * multiple
-
-        # How many expansions are between y's
-        span = range(start_y, end_y) if start_y < end_y else range(end_y, start_y)
-        num_y_expansions = 0
-        for y in span:
-            if y not in rows_with_gal:
-                num_y_expansions += 1
-        dy = abs(start_y - end_y) + num_y_expansions * multiple
-
-        answer += dx + dy
-
-    return answer
+    return solve(lines, 1000000)
 
 
 if __name__ == '__main__':
