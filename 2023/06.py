@@ -4,7 +4,6 @@ Part 2: Do it again, but for one big, long race.
 """
 import math
 import os
-import re
 
 from util import find_digits, run
 

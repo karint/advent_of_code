@@ -4,7 +4,6 @@ Part 2: Find the area enclosed by the pipe loop.
 """
 import os
 
-from collections import defaultdict
 from util import Direction, run
 
 
