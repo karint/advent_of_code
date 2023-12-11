@@ -1,8 +1,5 @@
 import os
-import json
-import re
 
-from collections import defaultdict
 from itertools import combinations
 from util import run
 
