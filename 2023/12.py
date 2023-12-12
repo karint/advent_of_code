@@ -31,11 +31,6 @@ def get_possible_ways(line, nums, num_index, start_search_index):
     if not is_possible(line, nums):
         return set()
 
-    if matches(line, nums):
-        # We finished putting everything in place, or there's
-        # nothing left to replace, or there's only one arrangement.
-        return set([line])
-
     # Set position of first group, then determine possible ways for remaining
     # string and groups. Recurse.
     ways = set()
@@ -62,7 +57,7 @@ def get_possible_ways(line, nums, num_index, start_search_index):
             group += '.'
 
         # Replace the substring at the designated place
-        attempt = line[0:i] + group + line[i + len(group):len(line)]
+        attempt = line[0:i].replace('?', '.') + group + line[i + len(group):len(line)]
         # print('attempt', attempt, group)
 
         # If the placement is viable, recurse to find all possible placements
@@ -85,25 +80,40 @@ def part_1(lines):
         nums = list(map(int, nums.split(',')))
 
         ways = get_possible_ways(line, nums, 0, 0)
-        print(line, ','.join(map(str, nums)), len(ways))
+        # print(line, ','.join(map(str, nums)), len(ways))
+
+        answer += len(ways)
+
+    return answer
+
+
+def part_2(lines):
+    answer = 0
+    for i, line in enumerate(lines):
+        if i % 100 == 0:
+            print(i)
+        line = line.strip()
+
+        line, nums = line.split(' ')
+
+        line = '?'.join([line] * 5)
+        nums = ','.join([nums] * 5)
+        nums = list(map(int, nums.split(',')))
+
+        ways = get_possible_ways(line, nums, 0, 0)
+        # print(line, ','.join(map(str, nums)), len(ways))
 
         errors = 0
         for way in ways:
             if not is_possible(way, nums):
                 print('ERROR')
                 errors += 1
-            print(way)
+            # print(way)
 
         answer += len(ways) - errors
 
     return answer
 
-
-def part_2(lines):
-    return part_1(lines)
-
-# low: 6774
-# high: 6922
 
 if __name__ == '__main__':
     day = os.path.basename(__file__).replace('.py', '')
