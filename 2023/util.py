@@ -2,6 +2,7 @@ import os
 import re
 import requests
 import sys
+import time
 
 ALPHABET_LOWER = 'abcdefghijklmnopqrstuvwxyz'
 ALPHABET_UPPER = ALPHABET_LOWER.upper()
@@ -120,6 +121,7 @@ def run(day, part_1_fn, part_2_fn):
     test_only = 't' in args
     real_only = 'r' in args
     force_part_1 = '1' in args
+    measure_time = 'time' in args
 
     year = os.getcwd().split('/')[-1]
     input_file_name = '%s.txt' % day
@@ -150,4 +152,9 @@ def run(day, part_1_fn, part_2_fn):
     if not test_only:
         with open('%s.txt' % day, 'r') as file:
             lines = file.readlines()
-            print('---Real---\n', fn(lines))
+            start = time.perf_counter()
+            result = fn(lines)
+            duration = time.perf_counter() - start
+            print('---Real---\n', result)
+            if measure_time:
+                print('Time:', duration)
