@@ -1,58 +1,39 @@
+"""
+Part 1: Follow instructions to determine the hash of a sequence.
+Part 2: Follow instructions to put lenses in boxes.
+"""
 import os
-import json
-import re
 
 from collections import defaultdict
 from util import run
 
 
+def get_hash(string):
+    hash_ = 0
+    for char in string:
+        hash_+= ord(char)
+        hash_*= 17
+        hash_%= 256
+    return hash_
+
+
 def part_1(lines):
-    answer = 0
-    for line in lines:
-        if not line:
-            continue
-        tests = line.strip().split(',')
-        for test in tests:
-            a = 0
-            for char in test:
-                a += ord(char)
-                a = a * 17
-                a = a % 256
-            answer += a
-            # print(test, a)
-
-    return answer
-
-
-def get_a(test):
-    a = 0
-    for char in test:
-        a += ord(char)
-        a = a * 17
-        a = a % 256
-
-    return a
+    steps = lines[0].strip().split(',')
+    return sum(get_hash(step) for step in steps)
 
 
 def part_2(lines):
     boxes = defaultdict(list)
-    line = lines[0].strip()
-    tests = line.split(',')
-    for test in tests:
-        test = test.strip()
-        if not test:
-            continue
-        if '-' in test:
-            label = test[:-1]
-            box_index = get_a(label)
+    steps = lines[0].strip().split(',')
+    for step in steps:
+        if '-' in step:
+            label = step[:-1]
+            box_index = get_hash(label)
             box = boxes[box_index]
-            boxes[box_index] = [
-                (l, focal) for (l, focal) in box if l != label
-            ]
+            boxes[box_index] = [(l, f) for (l, f) in box if l != label]
         else:
-            label, focal = test.split('=')
-            box_index = get_a(label)
-            box = boxes[box_index]
+            label, focal = step.split('=')
+            box = boxes[get_hash(label)]
             found = False
             for i, (lens_label, _) in enumerate(box):
                 if lens_label == label:
@@ -61,15 +42,11 @@ def part_2(lines):
             if not found:
                 box.append((label, focal))
 
-    answer = 0
-    for box_num, box in boxes.items():
-        if not box:
-            continue
-
-        for i, (label, focal) in enumerate(box):
-            answer += (1 + box_num) * (i + 1) * int(focal)
-
-    return answer
+    return sum(
+        (box_index + 1) * (slot_index + 1) * int(focal)
+        for box_index, box in boxes.items()
+        for slot_index, (label, focal) in enumerate(box)
+    )
 
 
 if __name__ == '__main__':
