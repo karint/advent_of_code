@@ -1,138 +1,83 @@
+"""
+Part 1: Roll rocks north on a grid.
+Part 2: Roll rocks north, east, south, and west in many cycles.
+"""
 import os
-import json
-import re
 
-from collections import defaultdict
 from util import run
+
+TILTS_PER_CYCLE = 4
+
+
+def tilt_and_rotate(grid):
+    """
+    Returns result of tilting grid up, then rotating clockwise.
+    """
+    shifted_grid = []
+    for x in range(len(grid[0])):
+        col = []
+        ready_to_roll = []
+        for y in range(len(grid)):
+            cell = grid[y][x]
+            match(cell):
+                case '#':
+                    col += ready_to_roll
+                    ready_to_roll = []
+                    col += '#'
+                case 'O':
+                    ready_to_roll.insert(0, cell)
+                case '.':
+                    ready_to_roll.append(cell)
+        col += ready_to_roll
+        col.reverse()
+        shifted_grid.append(col)
+    return shifted_grid
 
 
 def part_1(lines):
-    answer = 0
-    grid = []
-    rocks = set()
-    for y, line in enumerate(lines):
-        line = line.strip()
-        grid.append(line)
-        for x, char in enumerate(line):
-            if char == 'O':
-                rocks.add((x, y))
+    grid = tilt_and_rotate([line.strip() for line in lines])
+    return sum(
+        # Find distance from West, which is the new South
+        sum(i + 1 if char == 'O' else 0 for i, char in enumerate(row))
+        for row in grid
+    )
 
-    shifted_grid = []
 
-    for x in range(len(grid[0])):
-        col = []
-        banked_cells = []
-        last_block = -1
-        for y in range(len(grid)):
-            cell = grid[y][x]
-            if cell == '#':
-                last_block = y
-                col += list(sorted(banked_cells, reverse=True))
-                banked_cells = []
-                col += '#'
-                continue
-            elif cell == 'O':
-                last_block = y
-                banked_cells.append('O')
-            elif cell == '.':
-                banked_cells.append('.')
-
-        col += list(sorted(banked_cells, reverse=True))
-        col.reverse()
-        print(col)
-
-        answer += sum(
-            i + 1 if char == 'O' else 0 for i, char in enumerate(col)
-        )
-        
-    return answer
+def get_memo_key(grid):
+    return ''.join([''.join(row) for row in grid])
 
 
 def part_2(lines):
-    num_cycles = 1000000000
-
     MEMO = {}
+    num_cycles = 1000000000
+    grid = [line.strip() for line in lines]
 
-    answer = 0
-    orig_grid = []
-    for y, line in enumerate(lines):
-        line = line.strip()
-        orig_grid.append(line)
-
-    grid = orig_grid
+    # Find the cycle that starts to repeat a pattern
     loop_starts = None
-    loop_starts_again = None
+    loop_length = None
     for cycle in range(num_cycles):
-        total = 0
-        key = ''
-        for row in grid:
-            key += ''.join(row)
-        if not loop_starts and key in MEMO:
+        key = get_memo_key(grid)
+        if key in MEMO:
             # We've been here before
             loop_starts = MEMO[key]
-            loop_starts_again = cycle
-            print('loop is', loop_starts, loop_starts_again)
+            loop_length = cycle - loop_starts
             break
         else:
             MEMO[key] = cycle
 
-        for tilt in range(4):
-            shifted_grid = []
-            for x in range(len(grid[0])):
-                col = []
-                banked_cells = []
-                last_block = -1
-                for y in range(len(grid)):
-                    cell = grid[y][x]
-                    if cell == '#':
-                        last_block = y
-                        col += list(sorted(banked_cells, reverse=True))
-                        banked_cells = []
-                        col += '#'
-                        continue
-                    elif cell == 'O':
-                        last_block = y
-                        banked_cells.append('O')
-                    elif cell == '.':
-                        banked_cells.append('.')
+        for tilt in range(TILTS_PER_CYCLE):
+            grid = tilt_and_rotate(grid)
 
-                col += list(sorted(banked_cells, reverse=True))
-                col.reverse()
-                shifted_grid.append(col)
-
-            grid = shifted_grid
-
-    loop_length = loop_starts_again - loop_starts
+    # Remove loops from remaining cycles
     loops_left = (num_cycles - loop_starts) % loop_length
-    print(loop_length, loops_left)
+
+    # Finish remaining cycles
     for cycle in range(loops_left):
-        total = 0
-        for tilt in range(4):
-            shifted_grid = []
-            for x in range(len(grid[0])):
-                col = []
-                banked_cells = []
-                last_block = -1
-                for y in range(len(grid)):
-                    cell = grid[y][x]
-                    if cell == '#':
-                        last_block = y
-                        col += list(sorted(banked_cells, reverse=True))
-                        banked_cells = []
-                        col += '#'
-                        continue
-                    elif cell == 'O':
-                        last_block = y
-                        banked_cells.append('O')
-                    elif cell == '.':
-                        banked_cells.append('.')
+        for tilt in range(TILTS_PER_CYCLE):
+            grid = tilt_and_rotate(grid)
 
-                col += list(sorted(banked_cells, reverse=True))
-                col.reverse()
-                shifted_grid.append(col)
-
-            grid = shifted_grid
-
+    # Find distance from South since we ended up still oriented North
+    answer = 0
     for y, row in enumerate(grid):
         for x, char in enumerate(row):
             if char == 'O':
