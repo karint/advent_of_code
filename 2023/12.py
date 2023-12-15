@@ -73,7 +73,12 @@ def is_done(path, nums):
     return [len(group) for group in path.split('.') if group] == nums
 
 
+MEMO = {}
 def get_possible_ways(line, nums):
+    num_str = ','.join(map(str, nums))
+    if (line, num_str) in MEMO:
+        return MEMO[(line, num_str)]
+
     # print('get_possible_ways', line, nums)
     if '?' not in line:
         return 1 if is_viable(line, line, nums, '', is_finished=True) else 0
@@ -115,10 +120,12 @@ def get_possible_ways(line, nums):
         if counts:
             for num_groups, count in counts.items():
                 other_ways = get_possible_ways(line[i + 1:], nums[num_groups:])
+                MEMO[(line[i + 1:], ','.join(map(str, nums[num_groups:])))] = other_ways
                 total += count * other_ways
                 # print('num_groups', num_groups, 'count', count, 'other_ways', other_ways, 'total', total)
 
         viable_paths = pruned_viable_paths
+
 
     return total + sum(
         1 if is_done(path, nums) else 0 for path in viable_paths
@@ -143,19 +150,15 @@ def part_1(lines):
 def part_2(lines):
     answer = 0
     for i, line in enumerate(lines):
-        if i % 100 == 0:
-            print(i)
-        line = line.strip()
         line, nums = line.split(' ')
 
         line = '?'.join([line] * 5)
         nums = ','.join([nums] * 5)
         nums = list(map(int, nums.split(',')))
 
-        ways = get_possible_ways(line, nums)
-        print(line, ','.join(map(str, nums)), ways)
+        answer += get_possible_ways(line, nums)
 
-        answer += ways
+        # print(line, ','.join(map(str, nums)), ways)
 
     return answer
 
