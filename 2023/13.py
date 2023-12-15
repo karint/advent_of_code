@@ -1,187 +1,88 @@
+"""
+Part 1: Find the line of horizontal or vertical reflection in a pattern.
+Part 2: Find the new line of reflection assuming one cell is different.
+"""
 import os
-import json
-import re
 
-from collections import defaultdict
 from util import run
 
 
-def get_reflection_line(grid):
+def get_grid_diff(grid_a, grid_b):
+    width = len(grid_a[0])
+    return sum(
+        1 if grid_a[y][x] != grid_b[y][x] else 0
+        for x in range(width)
+        for y in range(min(len(grid_a), len(grid_b)))
+    )
+
+
+def get_reflection_line(grid, target_diff):
     width = len(grid[0])
     height = len(grid)
 
+    # First, try all the rows as reflection lines
     for row_to_try in range(1, height):
-        # Try rows
+        diff = 0
+
         grid_a = grid[0:row_to_try]
-        grid_b = grid[row_to_try:2*row_to_try]
+
+        # Create a reflection to compare against
+        grid_b = grid[row_to_try:2 * row_to_try]
         grid_b.reverse()
 
         if len(grid_a) == len(grid_b):
-            if all(grid_a[i] == grid_b[i] for i in range(len(grid_a))):
+            if get_grid_diff(grid_a, grid_b) == target_diff:
+                return (row_to_try, None)
+        else:
+            # Only compare the relevant part of grid a
+            # if grid b is smaller
+            grid_a = grid_a[-len(grid_b):]
+            if get_grid_diff(grid_a, grid_b) == target_diff:
                 return (row_to_try, None)
 
-        grid_a = grid_a[-len(grid_b):]
-        if all(grid_a[i] == grid_b[i] for i in range(len(grid_b))):
-            return (row_to_try, None)
-
-    transposed_grid = []
-    for x in range(width):
-        transposed_grid.append([])
-
+    # If rows don't work, must be a column. Transpose and run again.
+    transposed_grid = [[] for _ in range(width)]
     for y, row in enumerate(grid):
         for x, char in enumerate(row):
             transposed_grid[x].append(char)
 
-    width = len(transposed_grid[0])
-    height = len(transposed_grid)
+    reflection_line = get_reflection_line(transposed_grid, target_diff)
 
-    for row_to_try in range(1, height):
-        # Try rows
-        grid_a = transposed_grid[0:row_to_try]
-        grid_b = transposed_grid[row_to_try:2*row_to_try]
-        grid_b.reverse()
-
-        if len(grid_a) == len(grid_b):
-            if all(grid_a[i] == grid_b[i] for i in range(len(grid_a))):
-                return (None, row_to_try)
-
-        grid_a = grid_a[-len(grid_b):]
-        if all(grid_a[i] == grid_b[i] for i in range(len(grid_b))):
-            return (None, row_to_try)
-
-    print('NO LINE')
-    for row in grid:
-        print(row)
+    # Flip the result since rows became columns
+    return reflection_line[1], reflection_line[0]
 
 
-def get_reflection_line_2(grid):
-    width = len(grid[0])
-    height = len(grid)
+def process_grids(lines, target_diff):
+    answer = 0
+    grid = []
 
-    for row_to_try in range(1, height):
-        diff = 0
+    def process_grid():
+        row, col = get_reflection_line(grid, target_diff)
+        if row:
+            return 100 * row
+        return col
 
-        # Try rows
-        grid_a = grid[0:row_to_try]
-        grid_b = grid[row_to_try:2*row_to_try]
-        grid_b.reverse()
+    for line in lines:
+        line = line.strip()
 
-        if len(grid_a) == len(grid_b):
-            for i in range(len(grid_a)):
-                for j in range(width):
-                    if grid_a[i][j] != grid_b[i][j]:
-                        diff += 1
-            if diff == 1:
-                return (row_to_try, None)
+        if line:
+            grid.append(line)
         else:
-            grid_a = grid_a[-len(grid_b):]
-            for i in range(len(grid_b)):
-                for j in range(width):
-                    if grid_a[i][j] != grid_b[i][j]:
-                        diff += 1
-            if diff == 1:
-                return (row_to_try, None)
+            # Process old grid and start a new one
+            answer += process_grid()
+            grid = []
+            continue
 
-    transposed_grid = []
-    for x in range(width):
-        transposed_grid.append([])
-
-    for y, row in enumerate(grid):
-        for x, char in enumerate(row):
-            transposed_grid[x].append(char)
-
-    width = len(transposed_grid[0])
-    height = len(transposed_grid)
-
-    for row_to_try in range(1, height):
-        diff = 0
-
-        # Try rows
-        grid_a = transposed_grid[0:row_to_try]
-        grid_b = transposed_grid[row_to_try:2*row_to_try]
-        grid_b.reverse()
-
-        if len(grid_a) == len(grid_b):
-            for i in range(len(grid_a)):
-                for j in range(width):
-                    if grid_a[i][j] != grid_b[i][j]:
-                        diff += 1
-            if diff == 1:
-                return (None, row_to_try)
-        else:
-            grid_a = grid_a[-len(grid_b):]
-            for i in range(len(grid_b)):
-                for j in range(width):
-                    if grid_a[i][j] != grid_b[i][j]:
-                        diff += 1
-            if diff == 1:
-                return (None, row_to_try)
-
-    print('NO LINE')
-    for row in grid:
-        print(row)
+    answer += process_grid()
+    return answer
 
 
 def part_1(lines):
-    answer = 0
-    grid = []
-    for line in lines:
-        line = line.strip()
-
-        # New grid
-        if not line:
-            (row, col) = get_reflection_line(grid)
-            if row:
-                print('row', row)
-                answer += 100 * (row)
-            elif col:
-                print('col', col)
-                answer += col
-            grid = []
-            continue
-
-        grid.append(line)
-
-    (row, col) = get_reflection_line(grid)
-    if row:
-        print('row', row)
-        answer += 100 * (row)
-    elif col:
-        print('col', col)
-        answer += col
-
-    return answer
+    return process_grids(lines, target_diff=0)
 
 
 def part_2(lines):
-    answer = 0
-    grid = []
-    for line in lines:
-        line = line.strip()
-
-        # New grid
-        if not line:
-            (row, col) = get_reflection_line_2(grid)
-            if row:
-                print('row', row)
-                answer += 100 * (row)
-            elif col:
-                print('col', col)
-                answer += col
-            grid = []
-            continue
-
-        grid.append(line)
-
-    (row, col) = get_reflection_line_2(grid)
-    if row:
-        print('row', row)
-        answer += 100 * row
-    elif col:
-        print('col', col)
-        answer += col
-
-    return answer
+    return process_grids(lines, target_diff=1)
 
 
 if __name__ == '__main__':
