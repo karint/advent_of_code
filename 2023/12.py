@@ -1,20 +1,22 @@
+"""
+Part 1: Find all possible arrangements of a list of group sizes within a string.
+Part 2: Part 1, but both the string and list are repeated 5 times (string separated by wildcards).
+"""
 import os
-import json
-import re
-import sys
 
-from itertools import combinations_with_replacement, permutations
-from collections import Counter, defaultdict
+from collections import defaultdict
 from util import run
 
+WILDCARD = '?'
 
-def is_viable(line, path, nums, next_char, is_finished=False):
+
+def is_viable(line, path, nums, next_char):
     """
     Return None if not viable, otherwise returns the number of
     groups covered so far.
     """
-    # print('is viable?', path, nums, next_char)
     path_to_try = path + next_char
+
     # Only not viable if set of # doesn't match nums in order
     curr_group_len = 0
     num_index = 0
@@ -22,20 +24,15 @@ def is_viable(line, path, nums, next_char, is_finished=False):
         if char == '#':
             curr_group_len += 1
             if num_index >= len(nums) or curr_group_len > nums[num_index]:
-                # print('no -- group len too long', num_index, curr_group_len)
                 return False
         elif char == '.' and curr_group_len:
             if nums[num_index] != curr_group_len:
-                # print('no -- wrong number of rocks', num_index, curr_group_len)
                 return False
             curr_group_len = 0
             num_index += 1
 
-    # print('yes', num_index, curr_group_len)
-    # Also check that there's room for the groups needed ahead
-    line_so_far = path_to_try + line[len(path_to_try):]
-
     # Check if too many groups
+    line_so_far = path_to_try + line[len(path_to_try):]
     if sum(1 if char == '#' else 0 for char in line_so_far) > sum(nums):
         return False
 
@@ -62,43 +59,46 @@ def get_num_groups(path, nums):
             curr_group_len = 0
             num_index += 1
 
+    # Check if the last group we were working on was covered
     if char == '#' and curr_group_len == nums[num_index]:
         num_index += 1
 
-    # print('num groups for', path, 'is', num_index)
     return num_index
 
 
-def is_done(path, nums):
+def is_correct(path, nums):
+    """
+    Checks if the path fully matches the number of groups required.
+    """
     return [len(group) for group in path.split('.') if group] == nums
 
 
 MEMO = {}
-def get_possible_ways(line, nums):
-    num_str = ','.join(map(str, nums))
-    if (line, num_str) in MEMO:
-        return MEMO[(line, num_str)]
+def get_memo_key(line, nums):
+    return line, ','.join(map(str, nums))
 
-    # print('get_possible_ways', line, nums)
-    if '?' not in line:
-        return 1 if is_viable(line, line, nums, '', is_finished=True) else 0
+
+def get_possible_ways(line, nums):
+    key = get_memo_key(line, nums)
+    if key in MEMO:
+        return MEMO[key]
+
+    if WILDCARD not in line:
+        # No choices to make -- it's either correct or not :)
+        return 1 if is_correct(line, nums) else 0
 
     total = 0
     viable_paths = set([''])
     for i, char in enumerate(line):
-        if char != '?':
-            viable_paths = [path + char for path in viable_paths if is_viable(line, path, nums, char)]
+        if char != WILDCARD:
+            viable_paths = set(path + char for path in viable_paths if is_viable(line, path, nums, char))
         else:
+            # Split viable paths to cases where the wildcard is '#' and when it's '.'
             new_viable_paths = (
                 set(path + '.' for path in viable_paths if is_viable(line, path, nums, '.')) |
                 set(path + '#' for path in viable_paths if is_viable(line, path, nums, '#'))
             )
             viable_paths = new_viable_paths
-
-        if i == len(line) - 1:
-            return total + sum(
-                1 if is_done(path, nums) else 0 for path in viable_paths
-            )
 
         counts = defaultdict(int)
         pruned_viable_paths = set()
@@ -115,21 +115,18 @@ def get_possible_ways(line, nums):
             else:
                 pruned_viable_paths.add(path)
 
-        # print('path map', path_map)
-        # print('pruned', pruned_viable_paths)
         if counts:
+            # Use recursion to find the possible ways going forward for each combo of
+            # number of groups covered so far
             for num_groups, count in counts.items():
                 other_ways = get_possible_ways(line[i + 1:], nums[num_groups:])
-                MEMO[(line[i + 1:], ','.join(map(str, nums[num_groups:])))] = other_ways
                 total += count * other_ways
-                # print('num_groups', num_groups, 'count', count, 'other_ways', other_ways, 'total', total)
 
         viable_paths = pruned_viable_paths
 
-
-    return total + sum(
-        1 if is_done(path, nums) else 0 for path in viable_paths
-    )
+    ways = total + sum(1 if is_correct(path, nums) else 0 for path in viable_paths)
+    MEMO[get_memo_key(line, nums)] = ways
+    return ways
 
 
 def part_1(lines):
@@ -138,12 +135,7 @@ def part_1(lines):
         line = line.strip()
         line, nums = line.split(' ')
         nums = list(map(int, nums.split(',')))
-
-        ways = get_possible_ways(line, nums)
-        print(line, ','.join(map(str, nums)), ways)
-
-        answer += ways
-
+        answer += get_possible_ways(line, nums)
     return answer
 
 
@@ -151,15 +143,10 @@ def part_2(lines):
     answer = 0
     for i, line in enumerate(lines):
         line, nums = line.split(' ')
-
-        line = '?'.join([line] * 5)
+        line = WILDCARD.join([line] * 5)
         nums = ','.join([nums] * 5)
         nums = list(map(int, nums.split(',')))
-
         answer += get_possible_ways(line, nums)
-
-        # print(line, ','.join(map(str, nums)), ways)
-
     return answer
 
 
