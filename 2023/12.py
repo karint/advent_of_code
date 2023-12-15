@@ -1,75 +1,128 @@
 import os
 import json
 import re
+import sys
 
 from itertools import combinations_with_replacement, permutations
 from collections import Counter, defaultdict
 from util import run
 
 
-def matches(line, nums):
-    return [len(string) for string in line.split('.') if string] == nums
+def is_viable(line, path, nums, next_char, is_finished=False):
+    """
+    Return None if not viable, otherwise returns the number of
+    groups covered so far.
+    """
+    # print('is viable?', path, nums, next_char)
+    path_to_try = path + next_char
+    # Only not viable if set of # doesn't match nums in order
+    curr_group_len = 0
+    num_index = 0
+    for char in path_to_try:
+        if char == '#':
+            curr_group_len += 1
+            if num_index >= len(nums) or curr_group_len > nums[num_index]:
+                # print('no -- group len too long', num_index, curr_group_len)
+                return False
+        elif char == '.' and curr_group_len:
+            if nums[num_index] != curr_group_len:
+                # print('no -- wrong number of rocks', num_index, curr_group_len)
+                return False
+            curr_group_len = 0
+            num_index += 1
+
+    # print('yes', num_index, curr_group_len)
+    # Also check that there's room for the groups needed ahead
+    line_so_far = path_to_try + line[len(path_to_try):]
+
+    # Check if too many groups
+    if sum(1 if char == '#' else 0 for char in line_so_far) > sum(nums):
+        return False
+
+    # Check if there's enough remaining space to fit what we need to
+    if num_index < len(nums):
+        wiggle_room = len(line) - len(path_to_try) + curr_group_len
+        if wiggle_room < sum(nums[num_index:]) + len(nums[num_index:]) - 1:
+            return False
+
+    return True
 
 
-def is_possible(line, nums):
-    # Determines if the line is viable with the set of nums provided
-    groups = ['#' * num for num in nums]
-    regex = '[\\./\\?]+'.join(['[#/\\?]' * num for num in nums])
-    regex = '[\\./\\?]*' + regex + '[\\./\\?]*'
-    match = re.fullmatch(regex, line)
+def get_num_groups(path, nums):
+    """
+    Return None if not viable, otherwise returns the number of
+    groups covered so far.
+    """
+    curr_group_len = 0
+    num_index = 0
+    for char in path:
+        if char == '#':
+            curr_group_len += 1
+        elif char == '.' and curr_group_len:
+            curr_group_len = 0
+            num_index += 1
 
-    # if match:
-    #     print('match')
-    # else:
-    #     print('no match')
-    # print(line, nums, groups)
-    # print(regex)
-    return match is not None
+    if char == '#' and curr_group_len == nums[num_index]:
+        num_index += 1
+
+    # print('num groups for', path, 'is', num_index)
+    return num_index
 
 
-def get_possible_ways(line, nums, num_index, start_search_index):
-    if not is_possible(line, nums):
-        return set()
+def is_done(path, nums):
+    return [len(group) for group in path.split('.') if group] == nums
 
-    # Set position of first group, then determine possible ways for remaining
-    # string and groups. Recurse.
-    ways = set()
 
-    for i in range(start_search_index, len(line) - nums[num_index] + 1):
-        not_viable = False
+def get_possible_ways(line, nums):
+    # print('get_possible_ways', line, nums)
+    if '?' not in line:
+        return 1 if is_viable(line, line, nums, '', is_finished=True) else 0
 
-        # The group to place in various positions
-        group = '#' * nums[num_index]
+    total = 0
+    viable_paths = set([''])
+    for i, char in enumerate(line):
+        if char != '?':
+            viable_paths = [path + char for path in viable_paths if is_viable(line, path, nums, char)]
+        else:
+            new_viable_paths = (
+                set(path + '.' for path in viable_paths if is_viable(line, path, nums, '.')) |
+                set(path + '#' for path in viable_paths if is_viable(line, path, nums, '#'))
+            )
+            viable_paths = new_viable_paths
 
-        # The substring we'll replace with it
-        substring = line[i:i + len(group)]
-        # If there's always a set break there, we can't do it
-        if '.' in substring:
-            continue
+        if i == len(line) - 1:
+            return total + sum(
+                1 if is_done(path, nums) else 0 for path in viable_paths
+            )
 
-        # If we have another group to place, add a necessary break after this one
-        if num_index < len(nums) - 1:
-            # If we can't place the break, it's not a viable place
-            if i + len(group) < len(line) and line[i  + len(group)] == '#':
-                not_viable = True
-            if not_viable:
-                continue
-            group += '.'
-
-        # Replace the substring at the designated place
-        attempt = line[0:i].replace('?', '.') + group + line[i + len(group):len(line)]
-        # print('attempt', attempt, group)
-
-        # If the placement is viable, recurse to find all possible placements
-        if is_possible(attempt, nums):
-            # print('possible!', attempt, nums)
-            # If all groups were placed, track viable attempts then return that
-            if num_index + 1 == len(nums):
-                ways.add(attempt.replace('?', '.'))
+        counts = defaultdict(int)
+        pruned_viable_paths = set()
+        for path in viable_paths:
+            # If all paths hit a '.' at the same time and have the same number of
+            # groups/partial groups covered already, we can just see how one path does
+            # and multiply num ways by number of viable paths to get there
+            if path[-1] == '.':
+                num_groups = get_num_groups(path, nums)
+                if num_groups:
+                    counts[num_groups] += 1
+                else:
+                    pruned_viable_paths.add(path)
             else:
-                # Get possible ways for this new string and all non-placed groups
-                ways |= get_possible_ways(attempt, nums, num_index + 1, i + len(group))
-    return ways
+                pruned_viable_paths.add(path)
+
+        # print('path map', path_map)
+        # print('pruned', pruned_viable_paths)
+        if counts:
+            for num_groups, count in counts.items():
+                other_ways = get_possible_ways(line[i + 1:], nums[num_groups:])
+                total += count * other_ways
+                # print('num_groups', num_groups, 'count', count, 'other_ways', other_ways, 'total', total)
+
+        viable_paths = pruned_viable_paths
+
+    return total + sum(
+        1 if is_done(path, nums) else 0 for path in viable_paths
+    )
 
 
 def part_1(lines):
@@ -79,10 +132,10 @@ def part_1(lines):
         line, nums = line.split(' ')
         nums = list(map(int, nums.split(',')))
 
-        ways = get_possible_ways(line, nums, 0, 0)
-        # print(line, ','.join(map(str, nums)), len(ways))
+        ways = get_possible_ways(line, nums)
+        print(line, ','.join(map(str, nums)), ways)
 
-        answer += len(ways)
+        answer += ways
 
     return answer
 
@@ -93,24 +146,16 @@ def part_2(lines):
         if i % 100 == 0:
             print(i)
         line = line.strip()
-
         line, nums = line.split(' ')
 
         line = '?'.join([line] * 5)
         nums = ','.join([nums] * 5)
         nums = list(map(int, nums.split(',')))
 
-        ways = get_possible_ways(line, nums, 0, 0)
-        # print(line, ','.join(map(str, nums)), len(ways))
+        ways = get_possible_ways(line, nums)
+        print(line, ','.join(map(str, nums)), ways)
 
-        errors = 0
-        for way in ways:
-            if not is_possible(way, nums):
-                print('ERROR')
-                errors += 1
-            # print(way)
-
-        answer += len(ways) - errors
+        answer += ways
 
     return answer
 
