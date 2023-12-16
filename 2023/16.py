@@ -1,13 +1,14 @@
 """
-Part 1:
-Part 2:
+Part 1: Find energized cells in a grid that are hit by a light beam.
+Part 2: Find the maximum of energized cells from any starting position.
 """
 import os
 
-from util import run
+from util import Direction, run
 
 
-def is_valid(x, y, grid):
+def is_valid(coord, grid):
+    _, x, y = coord
     width = len(grid[0])
     height = len(grid)
     return (
@@ -15,193 +16,108 @@ def is_valid(x, y, grid):
         x < width and y < height
     )
 
+
+def get_coord_for_direction(direction, x, y):
+    match(direction):
+        case Direction.RIGHT:
+            return (direction, x + 1, y)
+        case Direction.LEFT:
+            return (direction, x - 1, y)
+        case Direction.DOWN:
+            return (direction, x, y + 1)
+        case Direction.UP:
+            return (direction, x, y - 1)
+
+
 def get_new_coords(x, y, symbol, direction, grid):
-    next_coords = None
+    directions = None
     match(symbol):
+        case '.':
+            directions = (direction,)
         case '|':
-            match(direction):
-                case 'R':
-                    next_coords = [('U', x, y-1), ('D', x, y+1)]
-                case 'L':
-                    next_coords = [('U', x, y-1), ('D', x, y+1)]
-                case 'D':
-                    next_coords = [('D', x, y+1)]
-                case 'U':
-                    next_coords = [('U', x, y-1)]
+            if direction in (Direction.RIGHT, Direction.LEFT):
+                directions = (Direction.UP, Direction.DOWN)
+            else:
+                directions = (direction,)
         case '-':
-            match(direction):
-                case 'R':
-                    next_coords = [('R', x+1, y)]
-                case 'L':
-                    next_coords = [('L', x-1, y)]
-                case 'D':
-                    next_coords = [('L', x-1, y), ('R', x+1, y)]
-                case 'U':
-                    next_coords = [('L', x-1, y), ('R', x+1, y)]
+            if direction in (Direction.UP, Direction.DOWN):
+                directions = (Direction.LEFT, Direction.RIGHT)
+            else:
+                directions = (direction,)
         case '/':
             match(direction):
-                case 'R':
-                    next_coords = [('U', x, y-1)]
-                case 'L':
-                    next_coords = [('D', x, y+1)]
-                case 'D':
-                    next_coords = [('L', x-1, y)]
-                case 'U':
-                    next_coords = [('R', x+1, y)]
+                case Direction.RIGHT:
+                    directions = (Direction.UP,)
+                case Direction.LEFT:
+                    directions = (Direction.DOWN,)
+                case Direction.DOWN:
+                    directions = (Direction.LEFT,)
+                case Direction.UP:
+                    directions = (Direction.RIGHT,)
         case '\\':
             match(direction):
-                case 'R':
-                    next_coords = [('D', x, y+1)]
-                case 'L':
-                    next_coords = [('U', x, y-1)]
-                case 'D':
-                    next_coords = [('R', x+1, y)]
-                case 'U':
-                    next_coords = [('L', x-1, y)]
-    return set(coord for coord in next_coords if is_valid(coord[1], coord[2], grid))
+                case Direction.RIGHT:
+                    directions = (Direction.DOWN,)
+                case Direction.LEFT:
+                    directions = (Direction.UP,)
+                case Direction.DOWN:
+                    directions = (Direction.RIGHT,)
+                case Direction.UP:
+                    directions = (Direction.LEFT,)
+
+    next_coords = set()
+    for d in directions:
+        coord = get_coord_for_direction(d, x, y)
+        if is_valid(coord, grid):
+            next_coords.add(coord)
+    return next_coords
 
 
-def part_1(lines):
-    grid = []
-    for line in lines:
-        line = line.strip()
-        grid.append(list(line))
-    beam_coords = set([('R', 0, 0)])
-    energized = set(beam_coords)
-
+def get_energized_coords(starting_coord, grid):
+    energized = set([starting_coord])
+    beam_coords = set(energized)
     while True:
         new_beam_coords = set()
         for direction, x, y in beam_coords:
-            symbol = grid[y][x]
-            if symbol == '.':
-                match(direction):
-                    case 'R':
-                        next_coord = (direction, x+1, y)
-                    case 'L':
-                        next_coord = (direction, x-1, y)
-                    case 'D':
-                        next_coord = (direction, x, y+1)
-                    case 'U':
-                        next_coord = (direction, x, y-1)
+            new_beam_coords |= get_new_coords(x, y, grid[y][x], direction, grid)
 
-                if is_valid(next_coord[1], next_coord[2], grid):
-                    new_beam_coords.add(next_coord)
-            else:
-                new_beam_coords |= get_new_coords(x, y, symbol, direction, grid)
-
-        new_set = new_beam_coords | energized
-
-        if len(new_set) == len(energized):
+        if not new_beam_coords - energized:
             break
 
         beam_coords = new_beam_coords
-        energized = new_set
+        energized |= beam_coords
 
-    energized_coords = set((coord[1], coord[2]) for coord in energized)
-
-    for y, row in enumerate(grid):
-        line = ''
-        for x, char in enumerate(row):
-            if (x, y) in energized_coords:
-                line += '#'
-            else:
-                line += char
-        print(line)
-
+    energized_coords = set((x, y) for _, x, y in energized)
     return len(energized_coords)
 
 
-def part_2(lines):
-    grid = []
-    for line in lines:
-        line = line.strip()
-        grid.append(list(line))
+def part_1(lines):
+    grid = [list(line.strip()) for line in lines]
+    return get_energized_coords((Direction.RIGHT, 0, 0), grid)
 
-    max_energized = None
-    max_starting = None
+
+def part_2(lines):
+    grid = [list(line.strip()) for line in lines]
     width = len(grid[0])
     height = len(grid)
 
-    for d in ('R', 'L'):
-        start_x = 0 if d == 'R' else width - 1
+    max_energized = 0
+    for starting_direction in (Direction.RIGHT, Direction.LEFT):
+        start_x = 0 if starting_direction == Direction.RIGHT else width - 1
         for y in range(height):
-            beam_coords = set([(d, start_x, y)])
-            energized = set(beam_coords)
+            max_energized = max(
+                max_energized,
+                get_energized_coords((starting_direction, start_x, y), grid)
+            )
 
-            while True:
-                new_beam_coords = set()
-                for direction, x, y in beam_coords:
-                    symbol = grid[y][x]
-                    if symbol == '.':
-                        match(direction):
-                            case 'R':
-                                next_coord = (direction, x+1, y)
-                            case 'L':
-                                next_coord = (direction, x-1, y)
-                            case 'D':
-                                next_coord = (direction, x, y+1)
-                            case 'U':
-                                next_coord = (direction, x, y-1)
-
-                        if is_valid(next_coord[1], next_coord[2], grid):
-                            new_beam_coords.add(next_coord)
-                    else:
-                        new_beam_coords |= get_new_coords(x, y, symbol, direction, grid)
-
-                new_set = new_beam_coords | energized
-
-                if len(new_set) == len(energized):
-                    break
-
-                beam_coords = new_beam_coords
-                energized = new_set
-
-            energized_coords = set((coord[1], coord[2]) for coord in energized)
-
-            if max_energized is None or len(energized_coords) > max_energized:
-                max_energized = len(energized_coords)
-                max_starting = (direction, start_x, y)
-
-    for d in ('U', 'D'):
-        start_y = 0 if d == 'D' else height - 1
+    for starting_direction in (Direction.UP, Direction.DOWN):
+        start_y = 0 if starting_direction == Direction.DOWN else height - 1
         for x in range(width):
-            beam_coords = set([(d, x, start_y)])
-            energized = set(beam_coords)
+            max_energized = max(
+                max_energized,
+                get_energized_coords((starting_direction, x, start_y), grid)
+            )
 
-            while True:
-                new_beam_coords = set()
-                for direction, x, y in beam_coords:
-                    symbol = grid[y][x]
-                    if symbol == '.':
-                        match(direction):
-                            case 'R':
-                                next_coord = (direction, x+1, y)
-                            case 'L':
-                                next_coord = (direction, x-1, y)
-                            case 'D':
-                                next_coord = (direction, x, y+1)
-                            case 'U':
-                                next_coord = (direction, x, y-1)
-
-                        if is_valid(next_coord[1], next_coord[2], grid):
-                            new_beam_coords.add(next_coord)
-                    else:
-                        new_beam_coords |= get_new_coords(x, y, symbol, direction, grid)
-
-                new_set = new_beam_coords | energized
-
-                if len(new_set) == len(energized):
-                    break
-
-                beam_coords = new_beam_coords
-                energized = new_set
-
-            energized_coords = set((coord[1], coord[2]) for coord in energized)
-            if max_energized is None or len(energized_coords) > max_energized:
-                max_energized = len(energized_coords)
-                max_starting = (direction, x, start_y)
-
-    print(max_energized, max_starting)
     return max_energized
 
 
