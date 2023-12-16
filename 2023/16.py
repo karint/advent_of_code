@@ -81,7 +81,8 @@ def get_energized_coords(starting_coord, grid):
         for direction, x, y in beam_coords:
             new_beam_coords |= get_new_coords(x, y, grid[y][x], direction, grid)
 
-        if not new_beam_coords - energized:
+        new_beam_coords -= energized
+        if not new_beam_coords:
             break
 
         beam_coords = new_beam_coords
