@@ -41,20 +41,17 @@ class PathGrid(object):
 
     def find_paths(self):
         min_heat = None
-        min_path = []
         visited = {}
-        viable_paths = [
-            [(0, 0, Direction.RIGHT, 0, 0)],
-            [(0, 0, Direction.DOWN, 0, 0)],
-        ]
+        viable_paths = set([
+            (0, 0, Direction.RIGHT, 0, 0),
+            (0, 0, Direction.DOWN, 0, 0),
+        ])
         while viable_paths:
-            new_paths = []
-            for path in viable_paths:
-                (last_x, last_y, curr_dir, steps_so_far, heat_so_far) = path[-1]
-                if (last_x, last_y) == self.ending_point:
+            new_paths = set()
+            for (last_x, last_y, curr_dir, steps_so_far, heat_so_far) in viable_paths:
+                if (last_x, last_y) == self.ending_point and steps_so_far >= 4:
                     if min_heat is None or heat_so_far < min_heat:
                         min_heat = heat_so_far
-                        min_path = path
                         continue
 
                 if min_heat is not None and heat_so_far >= min_heat:
@@ -83,7 +80,10 @@ class PathGrid(object):
                     ):
                         continue
 
-                    if direction == curr_dir and steps_so_far >= 3:
+                    if direction != curr_dir and steps_so_far < 4:
+                        continue
+
+                    if direction == curr_dir and steps_so_far >= 10:
                         continue
 
                     if direction == OPPOSITES[curr_dir]:
@@ -96,18 +96,18 @@ class PathGrid(object):
                         steps_so_far + 1 if curr_dir == direction else 1,
                         heat_so_far + self.grid[target_y][target_x]
                     )
-                    new_paths.append(path + [new_step])
+                    new_paths.add(new_step)
 
             viable_paths = new_paths
 
-        path_key = {
-            (x, y): SYMBOL[d] for (x, y, d, _, _) in min_path
-        }
-        for y, row in enumerate(self.grid):
-            line = ''
-            for x, char in enumerate(row):
-                line += path_key.get((x, y), str(char))
-            print(line)
+        # path_key = {
+        #     (x, y): SYMBOL[d] for (x, y, d, _, _) in min_path
+        # }
+        # for y, row in enumerate(self.grid):
+        #     line = ''
+        #     for x, char in enumerate(row):
+        #         line += path_key.get((x, y), str(char))
+        #     print(line)
 
         return min_heat
 
