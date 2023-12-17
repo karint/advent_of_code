@@ -61,13 +61,11 @@ def part_1(lines):
 
 def part_2(lines):
     def get_strength_fns(counts):
-        max_dups = max(counts.values())
+        max_dups = max((v for c, v in counts.items() if c != WILDCARD), default=0)
         sorted_counts = sorted(counts.values())
-        non_wild_counts = {k: v for k, v in counts.items() if k != WILDCARD}
         wild_count = counts.get(WILDCARD, 0)
         return [
             lambda counts: (  # 5 of a kind
-                counts.get(WILDCARD) == 5 or
                 max_dups + wild_count == 5
             ),
             lambda counts: (  # 4 of a kind
