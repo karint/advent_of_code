@@ -32,8 +32,6 @@ CORRECT_ANSWERS = [
 
 if __name__ == '__main__':
     args = sys.argv
-    print(args)
-
     if len(args) == 2:
         specific_day = args[1]
     else:
