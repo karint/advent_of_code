@@ -54,6 +54,5 @@ def part_2(lines):
 
 
 if __name__ == '__main__':
-    sys.setrecursionlimit(10000)
     day = os.path.basename(__file__).replace('.py', '')
     run(day, part_1, part_2)
