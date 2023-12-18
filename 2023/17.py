@@ -51,7 +51,6 @@ class Grid(object):
                     visited[(last_x, last_y, curr_dir, steps_so_far)] = heat_so_far
 
                 for direction, target_x, target_y in get_cardinal_direction_coords(last_x, last_y, grid=self.grid):
-                    # Don't revisit go out of bounds, past squares, or go too far in one direction
                     if (
                         # Don't take too few steps
                         (direction != curr_dir and steps_so_far < self.min_steps) or
