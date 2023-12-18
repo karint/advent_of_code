@@ -4,7 +4,7 @@ Part 2: Move a bigger and needier crucible.
 """
 import os
 
-from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_directions, run
+from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_direction_coords, run
 
 class Grid(object):
     def __init__(
@@ -50,7 +50,7 @@ class Grid(object):
                 else:
                     visited[(last_x, last_y, curr_dir, steps_so_far)] = heat_so_far
 
-                for direction, target_x, target_y in get_cardinal_directions(last_x, last_y, grid=self.grid):
+                for direction, target_x, target_y in get_cardinal_direction_coords(last_x, last_y, grid=self.grid):
                     # Don't revisit go out of bounds, past squares, or go too far in one direction
                     if (
                         # Don't take too few steps

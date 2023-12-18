@@ -4,7 +4,7 @@ Part 2: Find the area enclosed by the pipe loop.
 """
 import os
 
-from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_directions, run
+from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_direction_coords, run
 
 
 START_SYMBOL = 'S'
@@ -49,7 +49,7 @@ def initialize_grid(lines):
     # Determine symbol of starting coord and replace it in the grid
     neighbors = get_neighbors(start_x, start_y, grid, NeighborType.PIPE)
     cardinal_map = {
-        (x, y): direction for direction, x, y in get_cardinal_directions(start_x, start_y)
+        (x, y): direction for direction, x, y in get_cardinal_direction_coords(start_x, start_y)
     }
     directions_of_neighbors = {
         cardinal_map[(x, y)] for x, y in neighbors
@@ -68,7 +68,7 @@ def get_neighbors(x, y, grid, neighbor_type):
     """
     symbol = grid[y][x]
     neighbors = set()
-    for direction, x, y in get_cardinal_directions(x, y, grid=grid):
+    for direction, x, y in get_cardinal_direction_coords(x, y, grid=grid):
         if (
             neighbor_type == NeighborType.PIPE and
             symbol in CONNECTORS and
@@ -154,7 +154,7 @@ def part_2(lines):
         symbol = grid[y][x]
         next_pipe = None
 
-        cardinal_coords = get_cardinal_directions(x, y)
+        cardinal_coords = get_cardinal_direction_coords(x, y)
         left_right_tuples = {
             (direction, n_x, n_y, *LEFT_RIGHT_INFO[direction](x, y))
             for (direction, n_x, n_y) in cardinal_coords

@@ -4,7 +4,18 @@ Part 2: Find the maximum of energized cells from any starting position.
 """
 import os
 
-from util import Direction, move, run
+from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_direction_coords, run
+
+
+SLASH_REFLECT = {
+    Direction.RIGHT: Direction.UP,
+    Direction.LEFT: Direction.DOWN,
+    Direction.DOWN: Direction.LEFT,
+    Direction.UP: Direction.RIGHT,
+}
+BACKSLASH_REFLECT = {
+    k: OPPOSITE_DIRECTIONS[v] for k, v in SLASH_REFLECT.items()
+}
 
 
 def is_valid(coord, grid):
@@ -17,60 +28,19 @@ def is_valid(coord, grid):
     )
 
 
-def get_coord_for_direction(direction, x, y):
-    match(direction):
-        case Direction.RIGHT:
-            return (direction, x + 1, y)
-        case Direction.LEFT:
-            return (direction, x - 1, y)
-        case Direction.DOWN:
-            return (direction, x, y + 1)
-        case Direction.UP:
-            return (direction, x, y - 1)
-
-
 def get_new_coords(x, y, symbol, direction, grid):
-    directions = None
-    match(symbol):
-        case '.':
-            directions = (direction,)
-        case '|':
-            if direction in (Direction.RIGHT, Direction.LEFT):
-                directions = (Direction.UP, Direction.DOWN)
-            else:
-                directions = (direction,)
-        case '-':
-            if direction in (Direction.UP, Direction.DOWN):
-                directions = (Direction.LEFT, Direction.RIGHT)
-            else:
-                directions = (direction,)
-        case '/':
-            match(direction):
-                case Direction.RIGHT:
-                    directions = (Direction.UP,)
-                case Direction.LEFT:
-                    directions = (Direction.DOWN,)
-                case Direction.DOWN:
-                    directions = (Direction.LEFT,)
-                case Direction.UP:
-                    directions = (Direction.RIGHT,)
-        case '\\':
-            match(direction):
-                case Direction.RIGHT:
-                    directions = (Direction.DOWN,)
-                case Direction.LEFT:
-                    directions = (Direction.UP,)
-                case Direction.DOWN:
-                    directions = (Direction.RIGHT,)
-                case Direction.UP:
-                    directions = (Direction.LEFT,)
+    directions = (direction,)
 
-    next_coords = set()
-    for d in directions:
-        coord = (d, *move(d, x, y))
-        if is_valid(coord, grid):
-            next_coords.add(coord)
-    return next_coords
+    if symbol == '|' and direction in (Direction.RIGHT, Direction.LEFT):
+        directions = (Direction.UP, Direction.DOWN)
+    elif symbol == '-' and direction in (Direction.UP, Direction.DOWN):
+        directions = (Direction.LEFT, Direction.RIGHT)
+    elif symbol == '/':
+        directions = (SLASH_REFLECT[direction],)
+    elif symbol == '\\':
+        directions = (BACKSLASH_REFLECT[direction],)
+
+    return set(get_cardinal_direction_coords(x, y, directions=directions, grid=grid))
 
 
 def get_energized_coords(starting_coord, grid):

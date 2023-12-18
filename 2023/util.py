@@ -23,19 +23,7 @@ OPPOSITE_DIRECTIONS ={
 }
 
 
-def move(direction, x, y):
-    match(direction):
-        case Direction.RIGHT:
-            return (x + 1, y)
-        case Direction.LEFT:
-            return (x - 1, y)
-        case Direction.DOWN:
-            return (x, y + 1)
-        case Direction.UP:
-            return (x, y - 1)
-
-
-def get_cardinal_directions(x, y, grid=None):
+def get_cardinal_direction_coords(x, y, directions=None, grid=None):
     """
     If grid is provided, only returns directions
     within bounds.
@@ -46,6 +34,12 @@ def get_cardinal_directions(x, y, grid=None):
         (Direction.LEFT, x - 1, y),
         (Direction.UP, x, y - 1),
     ]
+
+
+    if directions is not None:
+        all_directions = [
+            (d, x, y) for (d, x, y) in all_directions if d in directions
+        ]
 
     if not grid:
         return all_directions
