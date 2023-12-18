@@ -4,14 +4,7 @@ Part 2: Move a bigger and needier crucible.
 """
 import os
 
-from util import Direction, run
-
-OPPOSITES ={
-    Direction.RIGHT: Direction.LEFT,
-    Direction.UP: Direction.DOWN,
-    Direction.LEFT: Direction.RIGHT,
-    Direction.DOWN: Direction.UP,
-}
+from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_directions, run
 
 class Grid(object):
     def __init__(
@@ -22,11 +15,8 @@ class Grid(object):
     ):
         self.grid = [list(map(int, l.strip())) for l in lines]
 
-        self.width = len(self.grid[0])
-        self.height = len(self.grid)
-
         self.start_x, self.start_y = 0, 0
-        self.end_x, self.end_y = self.width - 1, self.height - 1
+        self.end_x, self.end_y = len(self.grid[0]) - 1, len(self.grid) - 1
 
         self.min_steps = min_steps
         self.max_steps = max_steps
@@ -60,23 +50,15 @@ class Grid(object):
                 else:
                     visited[(last_x, last_y, curr_dir, steps_so_far)] = heat_so_far
 
-                for direction, target_x, target_y in (
-                    (Direction.RIGHT, last_x + 1, last_y),
-                    (Direction.DOWN, last_x, last_y + 1),
-                    (Direction.LEFT, last_x - 1, last_y),
-                    (Direction.UP, last_x, last_y - 1),
-                ):
+                for direction, target_x, target_y in get_cardinal_directions(last_x, last_y, grid=self.grid):
                     # Don't revisit go out of bounds, past squares, or go too far in one direction
                     if (
-                        # Don't go out of bounds
-                        target_x < 0 or target_x >= self.width or
-                        target_y < 0 or target_y >= self.height or
-                        # Or take too few steps
+                        # Don't take too few steps
                         (direction != curr_dir and steps_so_far < self.min_steps) or
                         # Or take too many steps
                         (direction == curr_dir and steps_so_far >= self.max_steps) or
-                        # or go backwards
-                        direction == OPPOSITES[curr_dir]
+                        # Or go backwards
+                        direction == OPPOSITE_DIRECTIONS[curr_dir]
                     ):
                         continue
 

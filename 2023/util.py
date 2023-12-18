@@ -8,90 +8,52 @@ ALPHABET_LOWER = 'abcdefghijklmnopqrstuvwxyz'
 ALPHABET_UPPER = ALPHABET_LOWER.upper()
 
 
-class PathGrid(object):
-    """
-    Class that can find the shortest path from a starting char to ending char in a grid.
-
-    Warning: Not very efficient :)
-    """
-    def __init__(
-        self,
-        lines,
-        starting_char,
-        ending_char,
-        can_reach,
-        replacement_map=None
-    ):
-        self.grid = []
-        self.starting_points = set()
-        self.ending_points = set()
-        self.can_reach = can_reach
-
-        if replacement_map is None:
-            replacement_map = {}
-
-        for y, row in enumerate(lines):
-            new_row = []
-            for x, char in enumerate(row.strip()):
-                if char == starting_char:
-                    self.starting_points.add((x, y))
-                elif char == ending_char:
-                    self.ending_points.add((x, y))
-                new_row.append(replacement_map.get(char, char))
-            self.grid.append(new_row)
-
-        self.width = len(self.grid[0])
-        self.height = len(self.grid)
-
-        self.shortest_path_length = self.find_shortest_path_length()
-
-    def find_shortest_path_length(self):
-        # Map of last coord to # of steps to get there
-        viable_paths = {
-            point: 0 for point in self.starting_points
-        }
-        while True:
-            new_paths = {}
-            for (last_x, last_y), num_steps in viable_paths.items():
-                if (last_x, last_y) in self.ending_points:
-                    return num_steps
-
-                right = (last_x + 1, last_y)
-                left = (last_x - 1, last_y)
-                up = (last_x, last_y + 1)
-                down = (last_x, last_y - 1)
-
-                for target_x, target_y in (right, left, up, down):
-                    # Don't revisit past squares or go out of bounds
-                    if (
-                        target_x < 0 or
-                        target_x >= self.width or
-                        target_y < 0 or
-                        target_y >= self.height
-                    ):
-                        continue
-
-                    if self.can_reach(self.grid, last_x, last_y, target_x, target_y):
-                        new_paths[(target_x, target_y)] = num_steps + 1
-
-            viable_paths = new_paths
-
-
 class Direction:
-    RIGHT = 'RIGHT'
     DOWN = 'DOWN'
     LEFT = 'LEFT'
+    RIGHT = 'RIGHT'
     UP = 'UP'
 
 
-def find_digits(line, cast_to=int):
-    return list(map(cast_to, re.findall('(-?\d+)', line.strip())))
+OPPOSITE_DIRECTIONS ={
+    Direction.DOWN: Direction.UP,
+    Direction.LEFT: Direction.RIGHT,
+    Direction.RIGHT: Direction.LEFT,
+    Direction.UP: Direction.DOWN,
+}
 
 
-def get_manhattan_distance(coord_1, coord_2):
-    dx = abs(coord_1[0] - coord_2[0])
-    dy = abs(coord_1[1] - coord_2[1])
-    return dx + dy
+def move(direction, x, y):
+    match(direction):
+        case Direction.RIGHT:
+            return (x + 1, y)
+        case Direction.LEFT:
+            return (x - 1, y)
+        case Direction.DOWN:
+            return (x, y + 1)
+        case Direction.UP:
+            return (x, y - 1)
+
+
+def get_cardinal_directions(x, y, grid=None):
+    """
+    If grid is provided, only returns directions
+    within bounds.
+    """
+    all_directions = [
+        (Direction.RIGHT, x + 1, y),
+        (Direction.DOWN, x, y + 1),
+        (Direction.LEFT, x - 1, y),
+        (Direction.UP, x, y - 1),
+    ]
+
+    if not grid:
+        return all_directions
+
+    return [
+        (d, x, y) for (d, x, y) in all_directions if
+        (x >= 0 and x < len(grid[0]) and y >= 0 and y < len(grid))
+    ]
 
 
 def get_adjacent_coords(x, y):
@@ -109,6 +71,16 @@ def get_adjacent_coords(x, y):
         (x + 1, y),
         (x + 1, y + 1),
     ]
+
+
+def get_manhattan_distance(coord_1, coord_2):
+    dx = abs(coord_1[0] - coord_2[0])
+    dy = abs(coord_1[1] - coord_2[1])
+    return dx + dy
+
+
+def find_digits(line, cast_to=int):
+    return list(map(cast_to, re.findall('(-?\d+)', line.strip())))
 
 
 def run(day, part_1_fn, part_2_fn):
@@ -130,7 +102,7 @@ def run(day, part_1_fn, part_2_fn):
         with open('../aoc_session_cookie.txt', 'r') as cookie_file:
             cookie = cookie_file.read()
 
-        url = 'https://adventofcode.com/{}/day/{}/input'.format(year, day)
+        url = 'https://adventofcode.com/{}/day/{}/input'.format(year, day.lstrip('0'))
 
         response = requests.get(
             url=url,

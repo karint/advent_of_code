@@ -48,7 +48,7 @@ def get_memo_key(grid):
 
 
 def part_2(lines):
-    MEMO = {}
+    cache = {}
     num_cycles = 1000000000
     grid = [line.strip() for line in lines]
 
@@ -57,13 +57,13 @@ def part_2(lines):
     loop_length = None
     for cycle in range(num_cycles):
         key = get_memo_key(grid)
-        if key in MEMO:
+        if key in cache:
             # We've been here before
-            loop_starts = MEMO[key]
+            loop_starts = cache[key]
             loop_length = cycle - loop_starts
             break
         else:
-            MEMO[key] = cycle
+            cache[key] = cycle
 
         for tilt in range(TILTS_PER_CYCLE):
             grid = tilt_and_rotate(grid)

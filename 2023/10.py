@@ -4,7 +4,7 @@ Part 2: Find the area enclosed by the pipe loop.
 """
 import os
 
-from util import Direction, run
+from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_directions, run
 
 
 START_SYMBOL = 'S'
@@ -16,13 +16,6 @@ CONNECTORS = {
     '-': set([Direction.LEFT, Direction.RIGHT]),
     'J': set([Direction.LEFT, Direction.UP]),
     'L': set([Direction.RIGHT, Direction.UP]),
-}
-
-OPPOSITES = {
-    Direction.DOWN: Direction.UP,
-    Direction.LEFT: Direction.RIGHT,
-    Direction.RIGHT: Direction.LEFT,
-    Direction.UP: Direction.DOWN,
 }
 
 class NeighborType:
@@ -43,15 +36,6 @@ LEFT_RIGHT_INFO = {
 }
 
 
-def get_cardinal_coords(x, y):
-    return [
-        (Direction.UP, x, y - 1),
-        (Direction.DOWN, x, y + 1),
-        (Direction.LEFT, x - 1, y),
-        (Direction.RIGHT, x + 1, y),
-    ]
-
-
 def initialize_grid(lines):
     # Initialize grid and find starting coords
     grid = []
@@ -65,7 +49,7 @@ def initialize_grid(lines):
     # Determine symbol of starting coord and replace it in the grid
     neighbors = get_neighbors(start_x, start_y, grid, NeighborType.PIPE)
     cardinal_map = {
-        (x, y): direction for direction, x, y in get_cardinal_coords(start_x, start_y)
+        (x, y): direction for direction, x, y in get_cardinal_directions(start_x, start_y)
     }
     directions_of_neighbors = {
         cardinal_map[(x, y)] for x, y in neighbors
@@ -84,10 +68,7 @@ def get_neighbors(x, y, grid, neighbor_type):
     """
     symbol = grid[y][x]
     neighbors = set()
-    for direction, x, y in get_cardinal_coords(x, y):
-        if y < 0 or y >= len(grid) or x < 0 or x >= len(grid[0]):
-            continue
-
+    for direction, x, y in get_cardinal_directions(x, y, grid=grid):
         if (
             neighbor_type == NeighborType.PIPE and
             symbol in CONNECTORS and
@@ -100,7 +81,7 @@ def get_neighbors(x, y, grid, neighbor_type):
             neighbor_symbol in NEIGHBOR_TYPES[neighbor_type] and
             (
                 neighbor_type == NeighborType.GROUND or
-                OPPOSITES[direction] in CONNECTORS[neighbor_symbol]
+                OPPOSITE_DIRECTIONS[direction] in CONNECTORS[neighbor_symbol]
             )
         ):
             neighbors.add((x, y))
@@ -173,7 +154,7 @@ def part_2(lines):
         symbol = grid[y][x]
         next_pipe = None
 
-        cardinal_coords = get_cardinal_coords(x, y)
+        cardinal_coords = get_cardinal_directions(x, y)
         left_right_tuples = {
             (direction, n_x, n_y, *LEFT_RIGHT_INFO[direction](x, y))
             for (direction, n_x, n_y) in cardinal_coords
@@ -191,7 +172,7 @@ def part_2(lines):
                 elif symbol == sym_2:
                     (left_ground if last_pipe == (last_pipe_x, last_pipe_y) else right_ground).add(coords)
             elif (
-                OPPOSITES[direction] in CONNECTORS[n_symbol] and
+                OPPOSITE_DIRECTIONS[direction] in CONNECTORS[n_symbol] and
                 direction in CONNECTORS[symbol] and
                 coords not in visited_coords
             ):

@@ -4,7 +4,7 @@ Part 2: Find the maximum of energized cells from any starting position.
 """
 import os
 
-from util import Direction, run
+from util import Direction, move, run
 
 
 def is_valid(coord, grid):
@@ -67,7 +67,7 @@ def get_new_coords(x, y, symbol, direction, grid):
 
     next_coords = set()
     for d in directions:
-        coord = get_coord_for_direction(d, x, y)
+        coord = (d, *move(d, x, y))
         if is_valid(coord, grid):
             next_coords.add(coord)
     return next_coords
