@@ -3,6 +3,7 @@ File used to test and confirm that all answers are still correct.
 Useful when refactoring utils that could impact multiple files.
 """
 import importlib
+import sys
 import time
 
 from util import run
@@ -26,10 +27,21 @@ CORRECT_ANSWERS = [
     ('15', 518107, 303404),
     ('16', 6994, 7488),
     ('17', 1001, 1197),
+    ('18', 40745, 90111113594927)
 ]
 
 if __name__ == '__main__':
+    args = sys.argv
+    print(args)
+
+    if len(args) == 2:
+        specific_day = args[1]
+    else:
+        specific_day = None
+
     for day, part_1_solution, part_2_solution in CORRECT_ANSWERS:
+        if specific_day is not None and specific_day != day:
+            continue
         solution_file = importlib.import_module(day)
         with open('%s.txt' % day, 'r') as file:
             print('Day %s:' % day)
