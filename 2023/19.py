@@ -1,84 +1,69 @@
 """
-Part 1:
-Part 2:
+Part 1: Follow workflow instructions to determine if a part is accepted or rejected.
+Part 2: Find all possible accepted combinations within ranges.
 """
 import math
 import os
+import re
 
-from collections import defaultdict
 from util import run
 
 START = 'in'
 
+
 def part_1(lines):
-    workflows = []
-    ratings = []
-    array = workflows
+    workflow_map = {}
+    rating_maps = []
+    is_workflow = True
     for line in lines:
         line = line.strip()
         if not line:
-            array = ratings
+            is_workflow = False
             continue
-        array.append(line)
-
-    workflow_order = []
-    workflow_map = {}
-    for workflow in workflows:
-        key, rest = workflow[:-1].split('{')
-        commands = rest.split(',')
-        key_if_false = commands[-1]
-        commands = commands[:-1]
-        workflow_map[key] = (commands, key_if_false)
-        workflow_order.append(key)
+        if is_workflow:
+            key, commands_str = line[:-1].split('{')
+            workflow_map[key] = commands_str.split(',')
+        else:
+            rating_maps.append(dict(re.findall('(\w)=(\d+)', line)))
 
     accepted = 0
-    for rating in ratings:
+    for rating_map in rating_maps:
         key = START
-        ratings_map = {
-            string.split('=')[0]: string.split('=')[1] for string in rating[1:-1].split(',')
-        }
-        print(ratings_map)
         while True:
-            print(key)
             if key == 'A':
-                print('accepted')
-                accepted += sum(map(int, ratings_map.values()))
+                accepted += sum(map(int, rating_map.values()))
                 break
-            elif key == 'R':
-                break
-            commands, key_if_false = workflow_map[key]
-            key = None
-            for command in commands:
-                eval_str = ratings_map[command[0]] + command.split(':')[0][1:]
-                print(eval_str)
-                if eval(eval_str):
-                    key = command.split(':')[1]
-                    break
-            if key is None:
-                key = key_if_false
 
+            if key == 'R':
+                break
+
+            for command in workflow_map[key]:
+                if ':' in command:
+                    eval_str, if_true = command.split(':')
+                    key = eval_str[0]
+                    if eval(rating_map[key] + eval_str[1:]):
+                        key = if_true
+                        break
+                else:
+                    key = command
     return accepted
 
 
 class Node:
-    def __init__(self, key, eval_str, if_true):
+    def __init__(self, key, eval_str):
         self.key = key
         self.eval_str = eval_str
-        self.if_true = if_true
-        self.if_false = None
+        self.children = {True: [], False: []}
         self.parents = {True: [], False: []}
-
-    def set_if_false(self, if_false):
-        self.if_false = if_false
-
-    def parent_was_true(self, node):
-        self.parents[True].append(node)
-
-    def parent_was_false(self, node):
-        self.parents[False].append(node)
 
     def __repr__(self):
         return self.eval_str
+
+    def add_child(self, child_node, condition):
+        self.children[condition].append(child_node)
+
+    def add_parent(self, parent_node, condition):
+        self.parents[condition].append(parent_node)
 
 
 def part_2(lines):
@@ -179,10 +164,10 @@ def part_2(lines):
             continue
 
         possible_rating_values = {
-            'x': set(range(1, max_val + 1)),
-            'm': set(range(1, max_val + 1)),
-            'a': set(range(1, max_val + 1)),
-            's': set(range(1, max_val + 1)),
+            'x': set(range(min_val, max_val + 1)),
+            'm': set(range(min_val, max_val + 1)),
+            'a': set(range(min_val, max_val + 1)),
+            's': set(range(min_val, max_val + 1)),
         }
         for (condition, node) in condition_path:
             rating_key = node.eval_str[0]
