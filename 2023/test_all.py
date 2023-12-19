@@ -49,17 +49,17 @@ if __name__ == '__main__':
             start = time.perf_counter()
             part_1_output = solution_file.part_1(lines)
             duration = time.perf_counter() - start
-            print('\tPart 1: %s (%.4fms)' % (
+            print('\tPart 1: %s (%.6fs)' % (
                 'Pass' if part_1_output == part_1_solution
                 else  'Fail: %s should be %s' % (part_1_output, part_1_solution),
-                duration * 1000
+                duration
             ))
 
             start = time.perf_counter()
             part_2_output = solution_file.part_2(lines)
             duration = time.perf_counter() - start
-            print('\tPart 2: %s (%.4fms)' % (
+            print('\tPart 2: %s (%.6fs)' % (
                 'Pass' if part_2_output == part_2_solution
                 else 'Fail: %s should be %s' % (part_2_output, part_2_solution),
-                duration * 1000
+                duration
             ))
