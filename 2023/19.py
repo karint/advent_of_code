@@ -132,10 +132,7 @@ def part_2(lines):
     total = 0
     for condition_path in final_paths:
         possible_rating_values = {
-            'x': set(range(MIN_VAL, MAX_VAL + 1)),
-            'm': set(range(MIN_VAL, MAX_VAL + 1)),
-            'a': set(range(MIN_VAL, MAX_VAL + 1)),
-            's': set(range(MIN_VAL, MAX_VAL + 1)),
+            k: set(range(MIN_VAL, MAX_VAL + 1)) for k in 'xmas'
         }
         for (condition, node) in condition_path:
             rating_key, operator, value = re.findall('(\w)([<|>])(\d+)', node.eval_str)[0]
@@ -145,13 +142,11 @@ def part_2(lines):
                     possible_rating_values[rating_key] &= set(range(value + 1, MAX_VAL + 1))
                 else: # Rating <= value
                     possible_rating_values[rating_key] &= set(range(1, value + 1))
-
             elif operator == '<':
                 if condition: # Rating < value
                     possible_rating_values[rating_key] &= set(range(1, value))
                 else: # Rating >= value
                     possible_rating_values[rating_key] &= set(range(value, MAX_VAL + 1))
-
         total += math.prod(len(total_set) for total_set in possible_rating_values.values())
 
     return total
