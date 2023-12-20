@@ -1,6 +1,10 @@
 """
 Part 1:
+Send pulses through a series of modules by pressing a button.
+
 Part 2:
+Determine how many button presses is needed to send a low pulse signal
+to a given target.
 """
 import math
 import os
@@ -8,6 +12,15 @@ import os
 from collections import defaultdict
 from util import run
 
+
+class Status:
+    OFF = 'off'
+    ON = 'on'
+
+
+class PulseType:
+    LOW = 'low'
+    HIGH = 'high'
 
 class BroadcastModule:
     def __init__(self, id_, targets):
@@ -30,25 +43,19 @@ class BroadcastModule:
 class FlipFlopModule:
     def __init__(self, id_, targets):
         self.id = id_
-        self.status = 'off'
+        self.status = Status.OFF
         self.targets = targets
 
     def __repr__(self):
         return '%' + self.id
 
     def send(self, pulse_queue):
-        if self.status == 'off':
-            for t in self.targets:
-                pulse_queue.append((self.id, t, 'low'))
-        elif self.status == 'on':
-            for t in self.targets:
-                pulse_queue.append((self.id, t, 'high'))
+        for t in self.targets:
+            pulse_queue.append((self.id, t, PulseType.LOW if self.status == Status.OFF else PulseType.HIGH))
 
     def receive(self, from_, pulse, pulse_queue):
-        if pulse == 'high':
-            pass
-        else:
-            self.status = 'off' if self.status == 'on' else 'on'
+        if pulse == PulseType.LOW:
+            self.status = Status.OFF if self.status == Status.ON else Status.ON
             self.send(pulse_queue)
 
 
@@ -69,128 +76,101 @@ class ConjModule:
 
     def receive(self, from_, pulse, pulse_queue):
         self.most_recents[from_] = pulse
-        self.queued_pulse = 'low' if all(last == 'high' for last in self.most_recents.values()) else 'high'
+        self.queued_pulse = (
+            PulseType.LOW if all(last == PulseType.HIGH for last in self.most_recents.values())
+            else PulseType.HIGH
+        )
         self.send(pulse_queue)
-        # print('recents now', self.most_recents)
 
 
-def part_1(lines):
+BROADCASTER = 'broadcaster'
+FLIPFLOP_PREFIX = '%'
+CONJ_PREFIX = '&'
+
+PREFIX_TO_CLASS = {
+    FLIPFLOP_PREFIX: FlipFlopModule,
+    CONJ_PREFIX: ConjModule,
+}
+
+
+def get_modules(lines):
     modules = {}
     conj_ids = set()
-    broadcaster = None
     for line in lines:
         line = line.strip()
         module, targets = line.split(' -> ')
         targets = targets.split(', ')
-        if module == 'broadcaster':
-            broadcaster = BroadcastModule('broadcaster', targets)
-            modules[module] = broadcaster
-        elif module.startswith('%'):
-            modules[module[1:]] = FlipFlopModule(module[1:], targets)
-        elif module.startswith('&'):
-            modules[module[1:]] = ConjModule(module[1:], targets)
-            conj_ids.add(module[1:])
 
+        if module == BROADCASTER:
+            modules[BROADCASTER] = BroadcastModule(BROADCASTER, targets)
+        else:
+            prefix, id_ = module[0], module[1:]
+            modules[id_] = PREFIX_TO_CLASS[prefix](id_, targets)
+            if prefix == CONJ_PREFIX:
+                conj_ids.add(id_)
+
+    # Initialize most recent inputs for all conjunction nodes to low
     for module in modules.values():
         for t in module.targets:
             if t in conj_ids:
-                modules[t].most_recents[module.id] = 'low'
+                modules[t].most_recents[module.id] = PulseType.LOW
+
+    return modules
+
+
+def part_1(lines):
+    modules = get_modules(lines)
 
     pulse_counts = defaultdict(int)
     for _ in range(1000):
         pulse_queue = []
-        pulse_counts['low'] += 1
-        broadcaster.receive('button', 'low', pulse_queue)
+        pulse_counts[PulseType.LOW] += 1
+        modules[BROADCASTER].receive('button', PulseType.LOW, pulse_queue)
 
         while pulse_queue:
             new_pulse_queue = []
             for source, target, pulse in pulse_queue:
-                print('%s -%s-> %s' % (source, pulse, target))
-                if source in conj_ids:
-                    print(modules[source].most_recents)
                 pulse_counts[pulse] += 1
                 if target in modules:
                     modules[target].receive(source, pulse, new_pulse_queue)
             pulse_queue = new_pulse_queue
 
-    print(pulse_counts)
-
-    return pulse_counts['high'] * pulse_counts['low']
+    return pulse_counts[PulseType.HIGH] * pulse_counts[PulseType.LOW]
 
 
 def part_2(lines):
-    TARGET = 'rx'
+    modules = get_modules(lines)
 
-    modules = {}
-    conj_ids = set()
-    broadcaster = None
-    for line in lines:
-        line = line.strip()
-        module, targets = line.split(' -> ')
-        targets = targets.split(', ')
-        if module == 'broadcaster':
-            broadcaster = BroadcastModule('broadcaster', targets)
-            modules[module] = broadcaster
-        elif module.startswith('%'):
-            modules[module[1:]] = FlipFlopModule(module[1:], targets)
-        elif module.startswith('&'):
-            modules[module[1:]] = ConjModule(module[1:], targets)
-            conj_ids.add(module[1:])
-
-    for module in modules.values():
-        for t in module.targets:
-            if t in conj_ids:
-                modules[t].most_recents[module.id] = 'low'
-
-    # For rx to get a single low pulse, all flip-flop switches upstream
-    # need to be high on the same turn. We therefore calculate how many pulses it takes each
-    # switch to send a high pulse.
-
-    """
-    rx: &hj
-    &hj: &ks,&jf,&qs,&zk
-    &jf: &rt
-    &qs: &fv
-    &ks: &sl
-    &zk: &gk
-    &rt: %bs,%pn,%vm,%vj,%zz,%bt,%jg,%rr,%mk
-    &fv: %cn,%bc,%kp,%jr,%gn,%jx,%pq,%bf
-    &sl: %rq,%dc,%ql,%jl,%mr,%jc,%gv,%mm,%cc
-    &gk: %sb,%vz,%rk,%bz,%rl,%rh,%lg
-    """
-
-    all_need_high = {
+    # To find a cycle length, get the first two times each of these sends
+    # a high pulse. ulled these by looking at the file. rs needs hj to send
+    # a low pulse, meaning all inputs into hj need to be high on the
+    # same button press. Those inputs are ks, jf, qs, and zk.
+    need_high_pulse = {
         'ks': [],
         'jf': [],
         'qs': [],
         'zk': [],
     }
-
     presses = 0
-    while any(len(highs) < 3 for highs in all_need_high.values()):
+    while any(len(highs) < 2 for highs in need_high_pulse.values()):
         presses += 1
         pulse_queue = []
-        broadcaster.receive('button', 'low', pulse_queue)
+        modules['broadcaster'].receive('button', PulseType.LOW, pulse_queue)
 
         while pulse_queue:
             new_pulse_queue = []
             for source, target, pulse in pulse_queue:
-                if source in all_need_high and pulse == 'high':
-                    # Nothing recorded yet, record
-                    if not all_need_high[source]:
-                        all_need_high[source].append(presses)
-                    elif len(all_need_high[source]) < 3 and all_need_high[source][-1] != presses:
-                        all_need_high[source].append(presses)
+                if source in need_high_pulse and pulse == PulseType.HIGH:
+                    if (
+                        not need_high_pulse[source] or
+                        (len(need_high_pulse[source]) < 2 and need_high_pulse[source][-1] != presses)
+                    ):
+                        need_high_pulse[source].append(presses)
                 if target in modules:
                     modules[target].receive(source, pulse, new_pulse_queue)
             pulse_queue = new_pulse_queue
 
-    high_cycle_lengths = []
-    for key, highs in all_need_high.items():
-        print(key, highs, highs[1] - highs[0])
-        high_cycle_lengths.append(highs[1] - highs[0])
-
-    return math.lcm(*high_cycle_lengths)
+    return math.lcm(*(highs[1] - highs[0] for highs in need_high_pulse.values()))
 
 
 if __name__ == '__main__':
