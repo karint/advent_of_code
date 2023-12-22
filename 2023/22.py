@@ -1,11 +1,11 @@
 """
-Part 1:
-Part 2:
+Part 1: Determine what bricks are safe to demolish once they are at rest in a cube.
+Part 2: Determine the total falling bricks when demonlishing each brick.
 """
 import os
 
 from collections import defaultdict
-from util import find_digits, run
+from util import run
 
 FREE = '.'
 
@@ -13,23 +13,15 @@ FREE = '.'
 class Brick:
     def __init__(self, id_, x1, y1, z1, x2, y2, z2):
         self.id = id_
-        self.x1 = x1
-        self.y1 = y1
-        self.z1 = z1
-        self.x2 = x2
-        self.y2 = y2
-        self.z2 = z2
+        self.x1, self.y1, self.z1 = x1, y1, z1
+        self.x2, self.y2, self.z2 = x2, y2, z2
         self.depends_on = set()
         self.depended_on_by = set()
 
     def __repr__(self):
         return '(%s, %s, %s)~(%s, %s, %s)' % (
-            self.x1,
-            self.y1,
-            self.z1,
-            self.x2,
-            self.y2,
-            self.z2,
+            self.x1, self.y1, self.z1,
+            self.x2, self.y2, self.z2,
         )
 
     def fall(self, cube):
@@ -51,7 +43,9 @@ class Brick:
                 self.z1 -= 1
                 self.z2 -= 1
 
-    def place(self, cube, replace=True):
+        self.place(cube, replace=True)
+
+    def place(self, cube, replace=False):
         if replace:
             for z in range(len(cube)):
                 for y in range(len(cube[0])):
@@ -66,7 +60,7 @@ class Brick:
                     cube[z][y][x] = self.id
 
 
-def part_1(lines):
+def iniitalize(lines):
     brick_map = {}
     max_x, max_y, max_z = -1, -1, -1
     for i, line in enumerate(lines):
@@ -84,9 +78,6 @@ def part_1(lines):
         if z2 > max_z:
             max_z = z2
 
-        if x1 > x2 or y1 > y2 or z1 > z2:
-            assert(False)
-
     # Make our 3d cube
     cube = []
     for _ in range(max_z + 1):
@@ -98,101 +89,60 @@ def part_1(lines):
             grid.append(row)
         cube.append(grid)
 
-    # First add all bricks into the cube
+    # Add all bricks into the cube
     for id_, brick in brick_map.items():
-        brick.place(cube, replace=False)
+        brick.place(cube)
 
-    # Order bricks by z axis
+    # Order bricks by z-axis and place them
     ordered_bricks = sorted(brick_map.values(), key=lambda b: b.z1)
     for brick in ordered_bricks:
         brick.fall(cube)
-        brick.place(cube, replace=True)
 
-    for z, grid in enumerate(cube):
-        line = ''
-        for y, row in enumerate(grid):
-            line += row[0]
+    return brick_map, cube
 
-    candidates = set(brick_map.keys())
-    for brick in ordered_bricks:
-        if len(brick.depends_on) == 1:
-            candidates.discard(next(iter(brick.depends_on)))
-    # print(candidates)
-    # print(set(brick_map.keys()) - set(dependents.keys()))
 
-    return len(candidates)
+def part_1(lines):
+    brick_map, cube = iniitalize(lines)
+    return len(
+        set(brick_map.keys()) -
+        set.union(*(
+            brick.depends_on for brick in brick_map.values()
+            if len(brick.depends_on) == 1
+        ))
+    )
 
 
 def part_2(lines):
-    brick_map = {}
-    max_x, max_y, max_z = -1, -1, -1
-    for i, line in enumerate(lines):
-        line = line.strip()
-        one, two = line.split('~')
-        x1, y1, z1 = map(int, one.split(','))
-        x2, y2, z2 = map(int, two.split(','))
-        brick = Brick(str(i), x1, y1, z1, x2, y2, z2)
-        brick_map[str(i)] = brick
+    brick_map, cube = iniitalize(lines)
 
-        if x2 > max_x:
-            max_x = x2
-        if y2 > max_y:
-            max_y = y2
-        if z2 > max_z:
-            max_z = z2
-
-        if x1 > x2 or y1 > y2 or z1 > z2:
-            assert(False)
-
-    # Make our 3d cube
-    cube = []
-    for _ in range(max_z + 1):
-        grid = []
-        for _ in range(max_y + 1):
-            row = []
-            for _ in range(max_x + 1):
-                row.append(FREE)
-            grid.append(row)
-        cube.append(grid)
-
-    # First add all bricks into the cube
-    for id_, brick in brick_map.items():
-        brick.place(cube, replace=False)
-
-    # Order bricks by z axis
-    ordered_bricks = sorted(brick_map.values(), key=lambda b: b.z1)
-    for brick in ordered_bricks:
-        brick.fall(cube)
-        brick.place(cube, replace=True)
-
-    for z, grid in enumerate(cube):
-        line = ''
-        for y, row in enumerate(grid):
-            line += row[0]
-
-    dependencies = defaultdict(set)
-    for brick in ordered_bricks:
-        for depended_on in brick.depends_on:
-            supporting_brick = brick_map[depended_on]
-            supporting_brick.depended_on_by.add(brick.id)
-            dependencies[brick.id].add(supporting_brick.id)
+    dependency_map = defaultdict(set)
+    for brick in brick_map.values():
+        for depended_on_id in brick.depends_on:
+            brick_map[depended_on_id].depended_on_by.add(brick.id)
+            dependency_map[brick.id].add(depended_on_id)
 
     total_falling = 0
-    for brick in ordered_bricks:
-        dependency_copy = {k: set(v) for k, v in dependencies.items()}
-        bricks_to_fall_ids = set([brick.id])
+    for brick_to_disintegrate in brick_map.values():
+        # Map of brick ID -> bricks it depends on
+        dependency_map_copy = {k: set(v) for k, v in dependency_map.items()}
+        bricks_to_fall_ids = set([brick_to_disintegrate.id])
         while bricks_to_fall_ids:
             new_bricks_to_fall_ids = set()
             for falling_brick_id in bricks_to_fall_ids:
-                for id_ in brick_map[falling_brick_id].depended_on_by:
-                    if not dependency_copy[id_]:
+                # Check all dependents of this falling brick
+                for dependent_id in brick_map[falling_brick_id].depended_on_by:
+                    # Check if dependent already fell
+                    if not dependency_map_copy[dependent_id]:
                         continue
-                    dependency_copy[id_].discard(falling_brick_id)
-                    if not dependency_copy[id_]:
-                        new_bricks_to_fall_ids.add(id_)
+
+                    # Remove the eliminated brick from being depended on
+                    dependency_map_copy[dependent_id].discard(falling_brick_id)
+
+                    # If we no longer have any bricks to depend on, we fall
+                    if not dependency_map_copy[dependent_id]:
+                        new_bricks_to_fall_ids.add(dependent_id)
                         total_falling += 1
             bricks_to_fall_ids = new_bricks_to_fall_ids
-
     return total_falling
 
 
