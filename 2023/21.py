@@ -1,11 +1,9 @@
 """
-Part 1:
-Part 2:
+Part 1: Determine how many possible ending spots an elf can end up in a grid after n steps.
+Part 2: Do the same for a very high number of steps and an infinite repeating grid.
 """
 import math
 import os
-import sys
-import time
 
 from collections import defaultdict
 from util import get_cardinal_direction_coords, run
@@ -15,10 +13,17 @@ GARDEN = '.'
 START = 'S'
 TRAVERSIBLE = {GARDEN, START}
 
+class DiamondType:
+    INNER = 'inner'
+    OUTER = 'outer'
 
-def part_1(lines):
+class Parity:
+    EVEN = 'even'
+    ODD = 'odd'
+
+
+def parse_grid(lines):
     grid = []
-    steps = 64
     start_x, start_y = None, None
     for y, line in enumerate(lines):
         line = line.strip()
@@ -27,17 +32,22 @@ def part_1(lines):
                 start_x = x
                 start_y = y
         grid.append(list(line))
+    return grid, start_x, start_y
+
+
+def part_1(lines):
+    STEPS = 64
+    grid, start_x, start_y = parse_grid(lines)
 
     num_steps = 0
     starts = [(start_x, start_y)]
-    while num_steps < steps:
-        new_starts = set()
-        stepped = set()
+    while num_steps < STEPS:
+        visited, new_starts = set(), set()
         for x, y in starts:
             dir_coords = get_cardinal_direction_coords(x, y, grid=grid)
             for _, nx, ny in dir_coords:
                 if grid[ny][nx] in TRAVERSIBLE:
-                    stepped.add((nx, ny))
+                    visited.add((nx, ny))
                     new_starts.add((nx, ny))
         starts = new_starts
         num_steps += 1
@@ -45,47 +55,34 @@ def part_1(lines):
     return len(new_starts)
 
 
-def get_equivalent_coord(x, y, width, height):
-    # Handles negative x and y just fine for our purposes
-    return (x % width, y % height)
-
-
-def get_grid_coord(x, y, width, height):
-    """
-    Returns (0, 0) if original grid, (0, 1) if this grid is the copy below the original,
-    (1, 0) if this grid is the copy to the right, etc.
-    """
-    return (
-        int(x/width) if x >= 0 else int((x + 1)/width) - 1,
-        int(y/height) if y >= 0 else int((y + 1)/height) - 1
-    )
-
-
 def part_2(lines):
-    grid = []
-    start_x, start_y = None, None
-    for y, line in enumerate(lines):
-        line = line.strip()
-        for x, char in enumerate(line):
-            if char == START:
-                start_x = x
-                start_y = y
-        grid.append(list(line))
+    """
+    This solution is VERY specific to test input, which is a 131x131 square with S in the middle.
+    The input also has straight garden lines from the middle to the outer edges and all along the
+    edges of the grid. This means as we step out, we form a diamond pattern.
+    """
+    STEPS = 26501365
+    grid, start_x, start_y = parse_grid(lines)
+    width = len(grid)
 
-    width = len(grid[0])
-    height = len(grid)
-
-    # Keep track in initial starting grid which tiles are even and which are odd. Even tiles
-    # can always be reached again and odds cannot.
-    even = set()
-    odd = set()
+    '''
+    Keep track in initial starting grid which tiles are even and which are odd. The odd tiles are
+    valid ending spots if # of steps is odd, which is the case here. If we take width / 2 steps,
+    we fill the inner diamond. While we're at it, I'd also like to find the total even/odd places
+    of the space outside of the diamond.
+    '''
+    walked = set()
+    parity_sets = defaultdict(set)
+    even = parity_sets[(DiamondType.INNER, Parity.EVEN)]
+    odd = parity_sets[(DiamondType.INNER, Parity.ODD)]
     num_steps = 0
     starts = [(start_x, start_y)]
-    while num_steps < 66:
+    while starts:
         new_starts = set()
         for x, y in starts:
-            if (x, y) in even | odd:
+            if (x, y) in walked:
                 continue
+            walked.add((x, y))
             (even if num_steps % 2 == 0 else odd).add((x, y))
             dir_coords = get_cardinal_direction_coords(x, y, grid=grid)
             for _, nx, ny in dir_coords:
@@ -93,62 +90,50 @@ def part_2(lines):
                     new_starts.add((nx, ny))
 
         num_steps += 1
+
+        if num_steps > width // 2:
+            even = parity_sets[(DiamondType.OUTER, Parity.EVEN)]
+            odd = parity_sets[(DiamondType.OUTER, Parity.ODD)]
+
         starts = new_starts
 
-    # for y, row in enumerate(grid):
-    #     line = ''
-    #     for x, char in enumerate(row):
-    #         if (x, y) in even:
-    #             line += 'x'
-    #         elif (x, y) in odd:
-    #             line += 'o'
-    #         else:
-    #             line += char
-    #     print(line)
-
-    print('even', len(even))
-    print('odd', len(odd))
+    parity_counts = {key: len(coords) for key, coords in parity_sets.items()}
 
     """
-    We make a diamond that repeats in 66 steps from the origin. Since total number of steps is odd,
-    all odd cells are viable in this first diamond. For this first diamond, counts are even 3637, odd 3699.
+    With each additional `width` steps beyond the original starting point, we create additional diamonds.
+    Each diamond adjacent to the inner diamond flips its even/odd parity. Outer diamonds always come in
+    equal numbers of odd/even parities, so we don't worry about flipping them.
 
-    With each additional 131 steps beyond that, we create additional diamonds. Each diamond adjacent to the origin
-    diamond flips its even/odd parity. For 9 diamonds (197 steps), counts are even 33137, odd 32947. Taking out
-    the middle diamond, we get even 29500 and odd 29248 across 8 diamonds.
+    For example, if we are taking 26501365 steps, after subtracting out the original 65 to get to the
+    edge of the diamond, we get (26501365 - 65)/131 = 202300 expansions of the inner diamond.
 
-    (26501365 - 65)/131 = 202300
-    202300*2+1 = 404601
-    404601^2 = 163701969201 diamonds total
+    Now we just add the proper even or odd values as we expand out the diamond.
     """
-
-    # There are two types of diamonds -- ones that are the same as the original center diamond, and another
-    # that is constructed from putting the four corners of the grid together. I grabbed counts of even/odd
-    # for both types.
-    ORIGIN_EVEN = 3637
-    ORIGIN_ODD = 3699
-
-    INTERCARD_ODD = 3583
-    INTERCARD_EVEN = 3769
-
-    """
-    Since we have an odd number of steps, we want the total number of odd tiles. However, even and odd counts
-    flip per adjacent diamond.
-    """
-    value = ORIGIN_ODD
+    even_is_good = STEPS % 2 == 0
+    expansions = (STEPS - (width - 1)//2) // width
+    value = parity_counts[(DiamondType.INNER, Parity.ODD)]  # Initial diamond only
     last_root = 1
-    for step in range(202300 + 1):
+    for step in range(expansions + 1):
+        step_is_even = step % 2 == 0
+        # Square root of the number of diamonds
         root = step * 2 + 1
+        # Get the outer blocks, which are the new values to add
         outer_blocks = math.pow(root, 2) - last_root
-        value += outer_blocks//2 * (ORIGIN_ODD if step % 2 == 0 else ORIGIN_EVEN)
+        # Add the copies of the inner diamond, which will be half of the outer blocks. If we're on an even expansion,
+        # we'll want to add the count of the same parity as the number of steps.
+        value += outer_blocks // 2 * (
+            parity_counts[(DiamondType.INNER, Parity.EVEN)] if even_is_good == step_is_even
+            else parity_counts[(DiamondType.INNER, Parity.ODD)]
+        )
         if step > 0:
-            num_intercards = outer_blocks//2
-            value += num_intercards//2 * INTERCARD_ODD
-            value += num_intercards//2 * INTERCARD_EVEN
+            # Other half of the outer blocks are equal numbers of even and odd outer diamonds
+            value += outer_blocks // 4 * (
+                parity_counts[(DiamondType.OUTER, Parity.ODD)] +
+                parity_counts[(DiamondType.OUTER, Parity.EVEN)]
+            )
         last_root = math.pow(root, 2)
-        # print(step, value, key.get(step))
 
-    return value
+    return int(value)
 
 
 if __name__ == '__main__':
