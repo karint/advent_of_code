@@ -2,6 +2,7 @@
 Part 1:
 Part 2:
 """
+import math
 import os
 import sys
 import time
@@ -13,8 +14,6 @@ ROCK = '#'
 GARDEN = '.'
 START = 'S'
 TRAVERSIBLE = {GARDEN, START}
-
-STEPS = None
 
 
 def part_1(lines):
@@ -82,7 +81,7 @@ def part_2(lines):
     odd = set()
     num_steps = 0
     starts = [(start_x, start_y)]
-    while starts:
+    while num_steps < 66:
         new_starts = set()
         for x, y in starts:
             if (x, y) in even | odd:
@@ -96,145 +95,62 @@ def part_2(lines):
         num_steps += 1
         starts = new_starts
 
-    total_garden_tiles_per_grid = len(even | odd)
-
-    # print('original grid')
     # for y, row in enumerate(grid):
     #     line = ''
     #     for x, char in enumerate(row):
     #         if (x, y) in even:
-    #             line += 'E'
+    #             line += 'x'
     #         elif (x, y) in odd:
-    #             line += 'O'
+    #             line += 'o'
     #         else:
     #             line += char
     #     print(line)
-    # print()
 
-    # For repeating grids, let (gx, gy) represent the grid's relative position
-    # to the original grid, where the grid to the right is (1, 0), grid to the NW is (-1, -1),
-    # and the original grid is (0, 0). We use floodfill to see if a whole grid has coverage,
-    # and if not, we only need to analyze steps for those grids to determine partial coverage.
-    grids_touched = defaultdict(set)
-    grids_fully_traversed = set()
-    is_flipped = {} # grid coords to whether it's flipped from original on even/odd
+    print('even', len(even))
+    print('odd', len(odd))
 
-    # Use a flood fill from origin to explore how many repeated grids can be reached.
-    # For each grid, determine when it was entered and how many steps were left when it was.
-    num_steps = 0
-    starts = [(start_x, start_y)]
-    walked = defaultdict(set)
-    while num_steps <= STEPS:
-        new_starts = set()
-        for x, y in starts:
-            grid_coords = get_grid_coord(x, y, width, height)
-            ex, ey = get_equivalent_coord(x, y, width, height)
+    """
+    We make a diamond that repeats in 66 steps from the origin. Since total number of steps is odd,
+    all odd cells are viable in this first diamond. For this first diamond, counts are even 3637, odd 3699.
 
-            if grid_coords in grids_fully_traversed or (ex, ey) in walked[grid_coords]:
-                continue
-            walked[grid_coords].add((ex, ey))
-            if len(walked[grid_coords]) == total_garden_tiles_per_grid:
-                grids_fully_traversed.add(grid_coords)
-                # Save some memory?
-                walked[grid_coords] = set()
+    With each additional 131 steps beyond that, we create additional diamonds. Each diamond adjacent to the origin
+    diamond flips its even/odd parity. For 9 diamonds (197 steps), counts are even 33137, odd 32947. Taking out
+    the middle diamond, we get even 29500 and odd 29248 across 8 diamonds.
 
-            if grid_coords not in grids_touched:
-                # First time encountering this grid -- is the first step even or odd?
-                is_flipped[grid_coords] = num_steps % 2 == 1
+    (26501365 - 65)/131 = 202300
+    202300*2+1 = 404601
+    404601^2 = 163701969201 diamonds total
+    """
 
-            grids_touched[grid_coords].add((ex, ey, num_steps))
+    # There are two types of diamonds -- ones that are the same as the original center diamond, and another
+    # that is constructed from putting the four corners of the grid together. I grabbed counts of even/odd
+    # for both types.
+    ORIGIN_EVEN = 3637
+    ORIGIN_ODD = 3699
 
-            dir_coords = get_cardinal_direction_coords(x, y)
-            for _, nx, ny in dir_coords:
-                enx, eny = get_equivalent_coord(nx, ny, width, height)
-                if grid[eny][enx] in TRAVERSIBLE:
-                    new_starts.add((nx, ny))
+    INTERCARD_ODD = 3583
+    INTERCARD_EVEN = 3769
 
-        num_steps += 1
-        starts = new_starts
+    """
+    Since we have an odd number of steps, we want the total number of odd tiles. However, even and odd counts
+    flip per adjacent diamond.
+    """
+    value = ORIGIN_ODD
+    last_root = 1
+    for step in range(202300 + 1):
+        root = step * 2 + 1
+        outer_blocks = math.pow(root, 2) - last_root
+        value += outer_blocks//2 * (ORIGIN_ODD if step % 2 == 0 else ORIGIN_EVEN)
+        if step > 0:
+            num_intercards = outer_blocks//2
+            value += num_intercards//2 * INTERCARD_ODD
+            value += num_intercards//2 * INTERCARD_EVEN
+        last_root = math.pow(root, 2)
+        # print(step, value, key.get(step))
 
-    # First count up possible positions in all grids that were fully traversed. If
-    # their first step into the grid was even and number of steps is even, the even
-    # tiles are accessible, otherwise the odd tiles are accessible.
-    total = 0
-    even_is_good = STEPS % 2 == 0
-    for grid_coords in grids_fully_traversed:
-        flipped = is_flipped[grid_coords]
-        if even_is_good:
-            if is_flipped:
-                total += len(odd)
-            else:
-                total += len(even)
-        else:
-            if is_flipped:
-                total += len(even)
-            else:
-                total += len(odd)
-
-    # print(grids_touched)
-    # print(grids_fully_traversed)
-
-    # Now for all grids that were only partially traversed, determine reachable
-    # cells more manually
-    for grid_coords, entry_points in grids_touched.items():
-        # print(grid_coords)
-        if grid_coords in grids_fully_traversed:
-            continue
-
-        grid_evens = set()
-        grid_odds = set()
-
-        for (ex, ey, num_steps) in entry_points:
-            # print('(%d, %d): %d' % (ex, ey, num_steps))
-            starts = [(ex, ey)]
-            while num_steps <= STEPS:
-                new_starts = set()
-                for x, y in starts:
-                    if (x, y) in grid_evens | grid_odds:
-                        continue
-                    (grid_evens if num_steps % 2 == 0 else grid_odds).add((x, y))
-                    dir_coords = get_cardinal_direction_coords(x, y, grid=grid)
-                    for _, nx, ny in dir_coords:
-                        if grid[ny][nx] in TRAVERSIBLE:
-                            new_starts.add((nx, ny))
-
-                num_steps += 1
-                starts = new_starts
-
-        if even_is_good:
-            total += len(grid_evens)
-        else:
-            total += len(grid_odds)
-
-        # print('e: %d, o: %d' % (len(grid_evens), len(grid_odds)))
-
-        # for y, row in enumerate(grid):
-        #     line = ''
-        #     for x, char in enumerate(row):
-        #         if (x, y) in grid_evens:
-        #             line += 'E'
-        #         elif (x, y) in grid_odds:
-        #             line += 'O'
-        #         else:
-        #             line += char
-        #     print(line)
-        # print()
-
-    solution_key = {
-        6: 16,
-        10: 50,
-        50: 1594,
-        100: 6536,
-        500: 167004,
-        1000: 668697,
-        5000: 16733044,
-    }
-    print('%d should be %d: %s' % (total, solution_key[STEPS], solution_key[STEPS] == total))
-
-    return total
+    return value
 
 
 if __name__ == '__main__':
-    STEPS = int(sys.argv[-1])
     day = os.path.basename(__file__).replace('.py', '')
     run(day, part_1, part_2)
