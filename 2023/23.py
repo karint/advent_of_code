@@ -6,17 +6,14 @@ from collections import defaultdict
 from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_direction_coords, run
 from termcolor import colored
 
+# Because I desperately needed to visualize
 COLORS = [
-    # 'black',
     'red',
     'green',
     'yellow',
     'blue',
     'magenta',
     'cyan',
-    # 'white',
-    # 'light_grey',
-    # 'dark_grey',
     'light_red',
     'light_green',
     'light_yellow',
@@ -25,12 +22,18 @@ COLORS = [
     'light_cyan',
 ]
 
-
 DIRECTION_MAP = {
     '>': [Direction.RIGHT],
     '<': [Direction.LEFT],
     '^': [Direction.UP],
     'v': [Direction.DOWN],
+}
+
+DIRECTION_DELTAS = {
+    '>': (1, 0),
+    '<': (-1, 0),
+    '^': (0, -1),
+    'v': (0, 1),
 }
 
 
@@ -44,6 +47,7 @@ class Tunnel:
     def size(self):
         return len(self.path)
 
+
 class Node:
     """
     A node that sits between tunnels and connects them.
@@ -51,24 +55,17 @@ class Node:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.adjacent_tunnel_ids = set()
-
-
-def is_adjacent(coord1, coord2):
-    x1, y1 = coord1
-    x2, y2 = coord2
-    return abs(x1 - x2) + abs(y1 - y2) == 1
+        self.valid_tunnel_ids = set()
 
 
 class Solver:
-    def __init__(self, grid):
-        self.grid = grid
-        self.min_x, self.max_x = 1, len(self.grid[0]) - 1
-        self.min_y, self.max_y = 1, len(self.grid) - 1
-        self.num_steps = 0
+    def __init__(self, lines, respect_slopes=True):
+        self.grid = [line.strip() for line in lines]
+        self.max_x = len(self.grid[0]) - 1
+        self.max_y = len(self.grid) - 1
         self.start_coord = (1, 0)
         self.goal_coord = (self.max_x - 1, self.max_y)
-        self.blocked = set()
+        self.respect_slopes = respect_slopes
 
         self.wall_coords = set()
         for y, row in enumerate(self.grid):
@@ -80,6 +77,8 @@ class Solver:
         self.tunnel_connector_nodes = {}
         self.start_tunnel_id = None
         self.goal_tunnel_id = None
+
+        self.populate_tunnels()
 
     def explore_tunnel(self, curr_tunnel, visited):
         curr_coord = curr_tunnel.path[-1]
@@ -100,6 +99,22 @@ class Solver:
                 return nx, ny
             return self.explore_tunnel(curr_tunnel, visited)
         return curr_coord
+
+    def is_connected(self, tunnel_endpoint, connector_coord):
+        tunnel_x, tunnel_y = tunnel_endpoint
+        connector_x,connector_y = connector_coord
+        dx = tunnel_x - connector_x
+        dy = tunnel_y - connector_y
+        direction_correct = True
+
+        # If we need to respect slopes, we need to check the symbol of the
+        # tunnel endpoint. For the connector to be connected to it, it needs to
+        # point away from the connector.
+        if self.respect_slopes:
+            symbol = self.grid[tunnel_y][tunnel_x]
+            direction_correct = DIRECTION_DELTAS.get(symbol) == (dx, dy)
+
+        return abs(dx) + abs(dy) == 1, direction_correct
 
     def populate_tunnels(self):
         """
@@ -159,62 +174,45 @@ class Solver:
 
             # If adjacent to a connector, set as neighbor of that connector
             for connector_coord, node in self.tunnel_connector_nodes.items():
-                if is_adjacent(start_coord, connector_coord):
-                    node.adjacent_tunnel_ids.add(tunnel_id)
-                    tunnel.adjacent_connector_coords.add(connector_coord)
-                if is_adjacent(end_coord, connector_coord):
-                    node.adjacent_tunnel_ids.add(tunnel_id)
-                    tunnel.adjacent_connector_coords.add(connector_coord)
+                symbol = self.grid[connector_coord[1]][connector_coord[0]]
+
+                for coord in (start_coord, end_coord):
+                    is_adjacent, direction_correct = self.is_connected(coord, connector_coord)
+                    if is_adjacent:
+                        tunnel.adjacent_connector_coords.add(connector_coord)
+                        if direction_correct:
+                            node.valid_tunnel_ids.add(tunnel_id)
 
             if end_coord == self.goal_coord:
                 self.goal_tunnel_id = tunnel_id
 
-        # self.print_tunnels()
-        # for coord, node in self.tunnel_connector_nodes.items():
-        #     print(coord, node.adjacent_tunnel_ids)
-
     def print_tunnels(self, tunnel_ids=None):
-        # Print the paths
+        RJUST_SIZE = 2
+
         coord_to_tunnel_id = {
             (x, y): id_
             for id_, tunnel in self.tunnel_map.items()
             for (x, y) in tunnel.path
+            if tunnel_ids is None or id_ in tunnel_ids
         }
-
-        if tunnel_ids:
-            coord_to_tunnel_id = {
-                (x, y): id_
-                for id_, tunnel in self.tunnel_map.items()
-                for (x, y) in tunnel.path
-                if id_ in tunnel_ids
-            }
-        else:
-            coord_to_tunnel_id = {
-                (x, y): id_
-                for id_, tunnel in self.tunnel_map.items()
-                for (x, y) in tunnel.path
-            }
 
         for y, row in enumerate(self.grid):
             string = ''
             for x, char in enumerate(row):
                 coord = (x, y)
                 if coord in self.wall_coords:
-                    string += '#'.rjust(2)
+                    string += '#'.rjust(RJUST_SIZE)
                 elif coord in self.tunnel_connector_nodes:
-                    string += '+'.rjust(2)
+                    string += '+'.rjust(RJUST_SIZE)
                 elif coord in coord_to_tunnel_id:
                     tunnel_id = coord_to_tunnel_id[coord]
-                    string += colored(str(tunnel_id).rjust(2), COLORS[tunnel_id % len(COLORS)])
-                elif coord in self.blocked:
-                    string += 'O'.rjust(2)
+                    string += colored(
+                        str(tunnel_id).rjust(RJUST_SIZE),
+                        COLORS[tunnel_id % len(COLORS)]
+                    )
                 else:
-                    string += char.rjust(2)
+                    string += char.rjust(RJUST_SIZE)
             print(string)
-
-    def simulate(self):
-        self.populate_tunnels()
-        return self.find_longest_path()
 
     def find_longest_path(self):
         return self.get_longest_path(self.start_tunnel_id, set(), set())
@@ -228,8 +226,6 @@ class Solver:
                 sum(self.tunnel_map[id_].size for id_ in visited_tunnel_ids) +
                 len(visited_connector_coords)
             ) - 1  # Subtract one because the first step of the first tunnel is step 0
-            self.print_tunnels(tunnel_ids = visited_tunnel_ids)
-            print()
             return longest_distance
 
         viable_neighbors = set()
@@ -240,7 +236,7 @@ class Solver:
             viable_neighbors |= set(
                 (neighbor_tunnel_id, connector_coord)
                 for neighbor_tunnel_id in (
-                    self.tunnel_connector_nodes[connector_coord].adjacent_tunnel_ids -
+                    self.tunnel_connector_nodes[connector_coord].valid_tunnel_ids -
                     visited_tunnel_ids
                 )
             )
@@ -257,27 +253,14 @@ class Solver:
         )
 
 def part_1(lines):
-    grid = []
-    for y, line in enumerate(lines):
-        line = line.strip()
-        grid.append(line)
-
-    solver = Solver(grid)
-    return solver.simulate()
+    return Solver(lines, respect_slopes=True).find_longest_path()
 
 
 def part_2(lines):
-    grid = []
-    for y, line in enumerate(lines):
-        line = line.strip()
-        grid.append(line)
-
-    solver = Solver(grid)
-    return solver.simulate()
+    return Solver(lines, respect_slopes=False).find_longest_path()
 
 
 if __name__ == '__main__':
-    sys.setrecursionlimit(100000)
     day = os.path.basename(__file__).replace('.py', '')
     run(day, part_1, part_2)
 
