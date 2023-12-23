@@ -4,6 +4,27 @@ import sys
 
 from collections import defaultdict
 from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_direction_coords, run
+from termcolor import colored
+
+COLORS = [
+    # 'black',
+    'red',
+    'green',
+    'yellow',
+    'blue',
+    'magenta',
+    'cyan',
+    # 'white',
+    # 'light_grey',
+    # 'dark_grey',
+    'light_red',
+    'light_green',
+    'light_yellow',
+    'light_blue',
+    'light_magenta',
+    'light_cyan',
+]
+
 
 DIRECTION_MAP = {
     '>': [Direction.RIGHT],
@@ -13,31 +34,35 @@ DIRECTION_MAP = {
 }
 
 
-def extract_coord(dir_coord):
-    return (dir_coord[1], dir_coord[2])
+class Tunnel:
+    def __init__(self, id_, path):
+        self.id = id_
+        self.path = path
+        self.adjacent_connector_coords = set()
 
+    @property
+    def size(self):
+        return len(self.path)
 
-def flip_dir_coord(dir_coord):
-    d, x, y = dir_coord
-    return (OPPOSITE_DIRECTIONS[d], x, y)
-
-
-class Slope:
-    def __init__(self, x, y, direction):
+class Node:
+    """
+    A node that sits between tunnels and connects them.
+    """
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.direction = direction
+        self.adjacent_tunnel_ids = set()
 
 
-class TunnelData:
-    def __init__(self, path):
-        self.path = path
+def is_adjacent(coord1, coord2):
+    x1, y1 = coord1
+    x2, y2 = coord2
+    return abs(x1 - x2) + abs(y1 - y2) == 1
 
 
 class Solver:
-    def __init__(self, grid, slopes):
+    def __init__(self, grid):
         self.grid = grid
-        self.slopes = slopes
         self.min_x, self.max_x = 1, len(self.grid[0]) - 1
         self.min_y, self.max_y = 1, len(self.grid) - 1
         self.num_steps = 0
@@ -51,236 +76,203 @@ class Solver:
                 if char == '#':
                     self.wall_coords.add((x, y))
 
-        # Map of coordinate where if you step on it, you should teleport to the end of the path and add
-        # num steps to your steps.
-        self.tunnels = {}  # start_coord -> dest_coord, num_steps
+        self.tunnel_map = {}
+        self.tunnel_connector_nodes = {}
+        self.start_tunnel_id = None
+        self.goal_tunnel_id = None
 
-    def get_longest_path(
-        self,
-        dir_curr_coord,
-        num_steps,
-        blocked,
-        tunnel,
-    ):
-        d, x, y = dir_curr_coord
-
-        new_blocked = set(blocked)
-        new_blocked.add((x, y))
-
-        if (x, y) == self.goal_coord:
-            self.blocked = blocked
-            return num_steps
-
-        if tunnel:
-            tunnel.path.append(dir_curr_coord)
-
-        # We can jump!
-        if self.grid[y][x] in DIRECTION_MAP and dir_curr_coord in self.tunnels:
-            valid_tunnel = self.tunnels[dir_curr_coord]
-            # print('Hopping from', dir_curr_coord, 'to', valid_tunnel.path[-1])
-            # print('Steps from %s to %s' % (num_steps, num_steps + len(valid_tunnel.path)))
-            new_blocked |= set((x, y) for _, x, y in valid_tunnel.path)
-            return self.get_longest_path(
-                valid_tunnel.path[-1],
-                num_steps + len(valid_tunnel.path) - 1,
-                set(new_blocked),
-                None
-            )
-
-        if self.grid[y][x] in DIRECTION_MAP or (x, y) == self.start_coord:
-            # Are we starting a new tunnel or finishing an existing one?
-            if tunnel:  # Finishing a tunnel
-                # print('Creating tunnel')
-                # print('Path', tunnel.path)
-                self.tunnels[tunnel.path[0]] = tunnel
-
-                # Make the opposite tunnel too, flippinga all the directions
-                tunnel_copy = TunnelData([flip_dir_coord(c) for c in tunnel.path[::-1]])
-                self.tunnels[tunnel_copy.path[0]] = tunnel_copy
-
-                tunnel = None
-            else:  # Starting one
-                # print('Starting tunnel')
-                # print(dir_curr_coord, num_steps)
-                tunnel = TunnelData([dir_curr_coord])
+    def explore_tunnel(self, curr_tunnel, visited):
+        curr_coord = curr_tunnel.path[-1]
+        x, y = curr_coord
+        visited.add(curr_coord)
 
         next_coords = get_cardinal_direction_coords(
             x, y,
-            blocked=blocked,
-            grid=self.grid
+            blocked=visited,
+            grid=self.grid,
         )
-        num_steps += 1
-        viable_neighbors = []
-        for nd, nx, ny in next_coords:
-            dir_next_coord = (nd, nx, ny)
+        for _, nx, ny in next_coords:
             next_coord = (nx, ny)
+            curr_tunnel.path.append(next_coord)
+            symbol = self.grid[ny][nx]
+            if symbol in DIRECTION_MAP or next_coord == self.goal_coord:
+                visited.add(next_coord)
+                return nx, ny
+            return self.explore_tunnel(curr_tunnel, visited)
+        return curr_coord
 
-            if nd == OPPOSITE_DIRECTIONS[d]:
+    def populate_tunnels(self):
+        """
+        The "maze" can be simplified to a graph of tunnels where a tunnel
+        represents a single path between forks in the road. Hopefully by simplifying
+        the space to fewer nodes, we can get a reasonable time for brute force.
+        """
+        tunnels = []
+        tunnel_id = 0
+        self.start_tunnel_id = tunnel_id
+        visited = set(self.wall_coords)
+        paths = [self.start_coord]
+
+        while paths:
+            new_paths = []
+            for x, y in paths:
+                curr_coord = (x, y)
+                if curr_coord in visited:
+                    continue
+
+                symbol = self.grid[y][x]
+                if symbol in DIRECTION_MAP or (x, y) == self.start_coord:
+                    # New tunnel
+                    curr_tunnel = Tunnel(tunnel_id, [curr_coord])
+                    tunnels.append(curr_tunnel)
+                    tunnel_id += 1
+
+                    curr_coord = self.explore_tunnel(curr_tunnel, visited)
+                    x, y = curr_coord
+                    symbol = self.grid[y][x]
+                else:
+                    self.tunnel_connector_nodes[curr_coord] = Node(*curr_coord)
+                    visited.add(curr_coord)
+
+                next_coords = get_cardinal_direction_coords(
+                    x, y,
+                    # Respect directions as in Part 1 so this finishes efficiently
+                    directions=DIRECTION_MAP.get(symbol),
+                    blocked=visited,
+                    grid=self.grid
+                )
+                viable_neighbors = []
+                for _, nx, ny in next_coords:
+                    next_coord = (nx, ny)
+                    new_paths.append((
+                        nx,
+                        ny,
+                    ))
+
+            paths = new_paths
+
+        self.tunnel_map = {t.id: t for t in tunnels}
+
+        for tunnel_id, tunnel in self.tunnel_map.items():
+            start_coord = tunnel.path[0]
+            end_coord = tunnel.path[-1]
+
+            # If adjacent to a connector, set as neighbor of that connector
+            for connector_coord, node in self.tunnel_connector_nodes.items():
+                if is_adjacent(start_coord, connector_coord):
+                    node.adjacent_tunnel_ids.add(tunnel_id)
+                    tunnel.adjacent_connector_coords.add(connector_coord)
+                if is_adjacent(end_coord, connector_coord):
+                    node.adjacent_tunnel_ids.add(tunnel_id)
+                    tunnel.adjacent_connector_coords.add(connector_coord)
+
+            if end_coord == self.goal_coord:
+                self.goal_tunnel_id = tunnel_id
+
+        # self.print_tunnels()
+        # for coord, node in self.tunnel_connector_nodes.items():
+        #     print(coord, node.adjacent_tunnel_ids)
+
+    def print_tunnels(self, tunnel_ids=None):
+        # Print the paths
+        coord_to_tunnel_id = {
+            (x, y): id_
+            for id_, tunnel in self.tunnel_map.items()
+            for (x, y) in tunnel.path
+        }
+
+        if tunnel_ids:
+            coord_to_tunnel_id = {
+                (x, y): id_
+                for id_, tunnel in self.tunnel_map.items()
+                for (x, y) in tunnel.path
+                if id_ in tunnel_ids
+            }
+        else:
+            coord_to_tunnel_id = {
+                (x, y): id_
+                for id_, tunnel in self.tunnel_map.items()
+                for (x, y) in tunnel.path
+            }
+
+        for y, row in enumerate(self.grid):
+            string = ''
+            for x, char in enumerate(row):
+                coord = (x, y)
+                if coord in self.wall_coords:
+                    string += '#'.rjust(2)
+                elif coord in self.tunnel_connector_nodes:
+                    string += '+'.rjust(2)
+                elif coord in coord_to_tunnel_id:
+                    tunnel_id = coord_to_tunnel_id[coord]
+                    string += colored(str(tunnel_id).rjust(2), COLORS[tunnel_id % len(COLORS)])
+                elif coord in self.blocked:
+                    string += 'O'.rjust(2)
+                else:
+                    string += char.rjust(2)
+            print(string)
+
+    def simulate(self):
+        self.populate_tunnels()
+        return self.find_longest_path()
+
+    def find_longest_path(self):
+        return self.get_longest_path(self.start_tunnel_id, set(), set())
+
+    def get_longest_path(self, curr_tunnel_id, visited_tunnel_ids, visited_connector_coords):
+        curr_node = self.tunnel_map[curr_tunnel_id]
+        visited_tunnel_ids.add(curr_tunnel_id)
+
+        if curr_tunnel_id == self.goal_tunnel_id:
+            longest_distance = (
+                sum(self.tunnel_map[id_].size for id_ in visited_tunnel_ids) +
+                len(visited_connector_coords)
+            ) - 1  # Subtract one because the first step of the first tunnel is step 0
+            self.print_tunnels(tunnel_ids = visited_tunnel_ids)
+            print()
+            return longest_distance
+
+        viable_neighbors = set()
+        for connector_coord in curr_node.adjacent_connector_coords:
+            if connector_coord in visited_connector_coords:
                 continue
 
-            tunnel_copy = TunnelData([c for c in tunnel.path]) if tunnel else None
-
-            viable_neighbors.append((
-                dir_next_coord,
-                num_steps,
-                tunnel_copy
-            ))
+            viable_neighbors |= set(
+                (neighbor_tunnel_id, connector_coord)
+                for neighbor_tunnel_id in (
+                    self.tunnel_connector_nodes[connector_coord].adjacent_tunnel_ids -
+                    visited_tunnel_ids
+                )
+            )
 
         if not viable_neighbors:
             return 0
 
         return max(
-            self.get_longest_path(dir_neighbor_coord, steps, set(new_blocked), sc)
-            for dir_neighbor_coord, steps, sc in viable_neighbors
+            self.get_longest_path(
+                neighbor_tunnel_id,
+                set(visited_tunnel_ids) | set([neighbor_tunnel_id]),
+                set(visited_connector_coords) | set([connector_coord])
+            ) for neighbor_tunnel_id, connector_coord in viable_neighbors
         )
-
-    def simulate(self):
-        start_dir_coord =(Direction.DOWN, self.start_coord[0], self.start_coord[1])
-        result = self.get_longest_path(
-            start_dir_coord,
-            0,
-            self.wall_coords,
-            None,
-        )
-
-        tunnel_starts = set(
-            extract_coord(s.path[0]) for s in self.tunnels.values()
-        )
-        # print(tunnel_starts)
-        for y, row in enumerate(self.grid):
-            string = ''
-            for x, char in enumerate(row):
-                if (x, y) in self.wall_coords:
-                    string += '#'
-                elif (x, y) in tunnel_starts:
-                    string += 'T'
-                elif (x, y) in self.blocked:
-                    string += 'O'
-                else:
-                    string += char
-            print(string)
-
-        return result
-
-
-class Node:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.neighbor_ids = set()
-        self.dist_from_source = -math.inf
-
-    @property
-    def id(self):
-        return (self.x, self.y)
-
-
-class DAG:
-    def __init__(self, lines):
-        self.grid = []
-        node_map = {}
-        self.wall_coords = set()
-        for y, line in enumerate(lines):
-            line = line.strip()
-            self.grid.append(line)
-            for x, char in enumerate(line):
-                if char == '#':
-                    self.wall_coords.add((x, y))
-                else:
-                    node_map[(x, y)] = Node(x, y)
-
-        self.min_x, self.max_x = 1, len(self.grid[0]) - 1
-        self.min_y, self.max_y = 1, len(self.grid) - 1
-        self.goal_coord = (self.max_x - 1, self.max_y)
-
-        # Set neightbors to build graph
-        node_batch = [(Direction.DOWN, 1, 0)]
-        while node_batch:
-            for d, x, y in node_batch:
-                new_node_batch = []
-                neighbor_coords = get_cardinal_direction_coords(
-                    x, y, grid=self.grid
-                )
-                for nd, nx, ny in neighbor_coords:
-                    if (nx, ny) in self.wall_coords:
-                        continue
-                    if nd == OPPOSITE_DIRECTIONS[d]:
-                        continue
-                    neighbor = node_map[(nx, ny)]
-                    node_map[(x, y)].neighbor_ids.add(neighbor.id)
-                    new_node_batch.append((nd, nx, ny))
-                node_batch = new_node_batch
-
-        # Topological sort
-        visited = set()
-        sorted_nodes = []
-
-        def visit(node):
-            if node.id not in visited:
-                visited.add(node.id)
-                for neighbor_id in node_map[node.id].neighbor_ids:
-                    visit(node_map[neighbor_id])
-                sorted_nodes.append(node)
-
-        for node in node_map.values():
-            visit(node)
-
-        sorted_nodes.reverse()
-
-        print([n.id for n in sorted_nodes])
-
-        # Populate distances
-        source_node = node_map[(1, 0)]
-        source_node.dist_from_source = 0
-        for node in sorted_nodes:
-            for neighbor_id in node.neighbor_ids:
-                neighbor = node_map[neighbor_id]
-                neighbor.dist_from_source = max(
-                    neighbor.dist_from_source,
-                    node.dist_from_source + 1
-                )
-
-        dist_map = {
-            node.id: node.dist_from_source for node in sorted_nodes
-        }
-        for y, row in enumerate(self.grid):
-            curr_str = ''
-            for x, char in enumerate(row):
-                if (x, y) not in dist_map:
-                    curr_str += char.rjust(4)
-                else:
-                    node = node_map[(x, y)]
-                    curr_str += str(dist_map[(x, y)]).rjust(4)
-            print(curr_str)
-
-        self.max_steps = node_map[self.goal_coord].dist_from_source
-
 
 def part_1(lines):
     grid = []
-    slopes = []
     for y, line in enumerate(lines):
         line = line.strip()
         grid.append(line)
-        for x, char in enumerate(line):
-            if char in DIRECTION_MAP:
-                slopes.append(Slope(x, y, char))
 
-    solver = Solver(grid, slopes)
+    solver = Solver(grid)
     return solver.simulate()
 
 
 def part_2(lines):
     grid = []
-    slopes = []
     for y, line in enumerate(lines):
         line = line.strip()
         grid.append(line)
-        for x, char in enumerate(line):
-            if char in DIRECTION_MAP:
-                slopes.append(Slope(x, y, char))
 
-    solver = Solver(grid, slopes)
+    solver = Solver(grid)
     return solver.simulate()
 
 
