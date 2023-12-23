@@ -23,7 +23,7 @@ OPPOSITE_DIRECTIONS ={
 }
 
 
-def get_cardinal_direction_coords(x, y, directions=None, grid=None):
+def get_cardinal_direction_coords(x, y, directions=None, grid=None, blocked=None):
     """
     If grid is provided, only returns directions
     within bounds.
@@ -39,6 +39,11 @@ def get_cardinal_direction_coords(x, y, directions=None, grid=None):
     if directions is not None:
         all_directions = [
             (d, x, y) for (d, x, y) in all_directions if d in directions
+        ]
+
+    if blocked is not None:
+        all_directions = [
+            (d, x, y) for (d, x, y) in all_directions if (x, y) not in blocked
         ]
 
     if not grid:
