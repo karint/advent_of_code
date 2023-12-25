@@ -4,6 +4,7 @@ Part 2:
 """
 import math
 import os
+import random
 import sys
 
 from collections import defaultdict
@@ -27,6 +28,14 @@ class Connection:
 
     def __repr__(self):
         return self.id
+
+
+class Subset:
+    def __init__(self, id_, parent_id):
+        self.id = id_
+        self.node_ids = set([parent_id])
+        self.parent_id = parent_id
+        self.rank = 0
 
 
 class Graph:
@@ -98,6 +107,68 @@ class Graph:
                 if low[connected_node_id] > time_discovered[curr_node_id]:
                     return Connection(curr_node_id, connected_node_id)
 
+    def karger(self, connection_map):
+        runs = 0
+        while True:
+            runs += 1
+            # print('Run', runs)
+            subset_map = {
+                i: Subset(i, node_id)
+                for i, node_id in enumerate(self.node_map.keys())
+            }
+            node_to_subset = {
+                node_id: subset.id
+                for subset in subset_map.values()
+                for node_id in subset.node_ids
+            }
+            num_vertices = len(self.node_map)
+            connection_pool = set(connection_map.keys())
+
+            while num_vertices > 2:
+                connection_id = random.choice(list(connection_pool))
+                connection_pool.remove(connection_id)
+
+                [node_a_id, node_b_id] = connection_map[connection_id].connected_node_ids
+                subset_a = subset_map[node_to_subset[node_a_id]]
+                subset_b = subset_map[node_to_subset[node_b_id]]
+
+                if subset_a.id == subset_b.id:
+                    # print('Subsets match', subset_a.id, subset_b.id, num_vertices)
+                    continue
+                else:
+                    # print('Merging!', subset_a.id, subset_b.id, num_vertices)
+                    num_vertices -= 1
+
+                    # Combine subsets
+                    if subset_a.rank >= subset_b.rank:
+                        subset_a.node_ids |= subset_b.node_ids
+                        for node_id in subset_b.node_ids:
+                            node_to_subset[node_id] = subset_a.id
+
+                        if subset_a.rank == subset_b.rank:
+                            subset_a.rank += 1
+                    else:
+                        subset_b.node_ids |= subset_a.node_ids
+                        for node_id in subset_a.node_ids:
+                            node_to_subset[node_id] = subset_b.id
+
+            cut_edges = 0
+            for connection in connection_map.values():
+                [node_a_id, node_b_id] = connection.connected_node_ids
+                if node_to_subset[node_a_id] != node_to_subset[node_b_id]:
+                    cut_edges += 1
+
+            if cut_edges == 3:
+                subsets = defaultdict(set)
+                for node_id, subset_id in node_to_subset.items():
+                    subsets[subset_id].add(node_id)
+
+                prod = 1
+                for subset in subsets.values():
+                    # print(len(subset), subset)
+                    prod *= len(subset)
+                return prod
+
     def dfs(self, curr_node_id, visited):
         visited.add(curr_node_id)
         for connected_node_id in self.node_map[curr_node_id].connected_to:
@@ -144,25 +215,27 @@ def part_1(lines):
             node_map[connected_node_id].connected_to.add(node.id)
 
     graph = Graph(node_map)
-    cut_two_combos = list(combinations(connection_map.values(), 2))
-    for i, (connection_a, connection_b) in enumerate(cut_two_combos):
-        if i % 100 == 0:
-            print('Processing %d/%d...' % (i, len(cut_two_combos)))
-        graph.set_removed_connections([connection_a, connection_b])
-        bridge = graph.find_bridge()
-        if bridge is not None:
-            connections_to_cut = (connection_a, connection_b, bridge)
-            graph.set_removed_connections(connections_to_cut)
-            components = graph.get_components()
+    # cut_two_combos = list(combinations(connection_map.values(), 2))
+    # for i, (connection_a, connection_b) in enumerate(cut_two_combos):
+    #     if i % 100 == 0:
+    #         print('Processing %d/%d...' % (i, len(cut_two_combos)))
+    #     graph.set_removed_connections([connection_a, connection_b])
+    #     bridge = graph.find_bridge()
+    #     if bridge is not None:
+    #         connections_to_cut = (connection_a, connection_b, bridge)
+    #         graph.set_removed_connections(connections_to_cut)
+    #         components = graph.get_components()
 
-            if len(components) != 2:
-                print('Wrong number of components, continuing the search...')
+    #         if len(components) != 2:
+    #             print('Wrong number of components, continuing the search...')
 
-            else:
-                for component in components:
-                    print(len(component), component)
-                print('Cutting:', connections_to_cut)
-                return math.prod(len(components) for components in components)
+    #         else:
+    #             for component in components:
+    #                 print(len(component), component)
+    #             print('Cutting:', connections_to_cut)
+    #             return math.prod(len(components) for components in components)
+
+    return graph.karger(connection_map)
 
 
 def part_2(lines):
