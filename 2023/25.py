@@ -31,7 +31,6 @@ class Subset:
     def __init__(self, id_, initial_node):
         self.id = id_
         self.node_ids = set([initial_node])
-        self.rank = 0
 
 
 class Graph:
@@ -73,20 +72,11 @@ class Graph:
                 else:
                     # Combine subsets
                     num_vertices -= 1
-                    if subset_a.rank >= subset_b.rank:
-                        subset_a.node_ids |= subset_b.node_ids
-                        node_to_subset.update({
-                            node_id: subset_a.id
-                            for node_id in subset_b.node_ids
-                        })
-                        if subset_a.rank == subset_b.rank:
-                            subset_a.rank += 1
-                    else:
-                        subset_b.node_ids |= subset_a.node_ids
-                        node_to_subset.update({
-                            node_id: subset_b.id
-                            for node_id in subset_a.node_ids
-                        })
+                    subset_a.node_ids |= subset_b.node_ids
+                    node_to_subset.update({
+                        node_id: subset_a.id
+                        for node_id in subset_b.node_ids
+                    })
 
             # Calculate the edges we have left
             remaining_vertices = 0
