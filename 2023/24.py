@@ -78,8 +78,19 @@ def part_1(lines):
 
 
 def part_2(lines):
-    # We need 5 hailstones to create a system of equations
-    NEEDED_HAILSTONES = 5
+    """
+    We start with 6 unknowns, and for every hailstone, we can add 3
+    independent equations (one per x, y, z) while introducing one new variable (time):
+    
+    0 hailstones = 6 unknowns: x0, y0, z0, dx, dy, and dx for the rock
+    1 hailstone = 3 equations => add t0 unknown (time for collision) = 7 unknowns
+    2 hailstones = 6 equations => add t1 unknown = 8 unknowns
+    3 hailstones = 9 equations => add t2 unknown = 9 unknowns
+    4 hailstones = 12 equations => add t3 unknown = 10 unknowns -> # equations > # unknowns!
+
+    This means we only need 4 hailstones to solve the system.
+    """
+    NEEDED_HAILSTONES = 4
     hailstones = parse_hailstones(lines)
     sample_hailstones = list(hailstones.values())[:NEEDED_HAILSTONES]
 
