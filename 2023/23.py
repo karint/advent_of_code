@@ -1,26 +1,16 @@
-import math
+"""
+Part 1: Find how many steps are on the longest hike, with directional slopes along the way.
+Part 2: Same thing but no more directional slopes.
+"""
 import os
-import sys
 
-from collections import defaultdict
-from util import OPPOSITE_DIRECTIONS, Direction, get_cardinal_direction_coords, run
-from termcolor import colored
-
-# Because I desperately needed to visualize
-COLORS = [
-    'red',
-    'green',
-    'yellow',
-    'blue',
-    'magenta',
-    'cyan',
-    'light_red',
-    'light_green',
-    'light_yellow',
-    'light_blue',
-    'light_magenta',
-    'light_cyan',
-]
+from util import (
+    TERM_COLORS,
+    Direction,
+    color_string,
+    get_cardinal_direction_coords,
+    run
+)
 
 DIRECTION_MAP = {
     '>': [Direction.RIGHT],
@@ -186,34 +176,6 @@ class Solver:
             if end_coord == self.goal_coord:
                 self.goal_tunnel_id = tunnel_id
 
-    def print_tunnels(self, tunnel_ids=None):
-        RJUST_SIZE = 2
-
-        coord_to_tunnel_id = {
-            (x, y): id_
-            for id_, tunnel in self.tunnel_map.items()
-            for (x, y) in tunnel.path
-            if tunnel_ids is None or id_ in tunnel_ids
-        }
-
-        for y, row in enumerate(self.grid):
-            string = ''
-            for x, char in enumerate(row):
-                coord = (x, y)
-                if coord in self.wall_coords:
-                    string += '#'.rjust(RJUST_SIZE)
-                elif coord in self.tunnel_connector_nodes:
-                    string += '+'.rjust(RJUST_SIZE)
-                elif coord in coord_to_tunnel_id:
-                    tunnel_id = coord_to_tunnel_id[coord]
-                    string += colored(
-                        str(tunnel_id).rjust(RJUST_SIZE),
-                        COLORS[tunnel_id % len(COLORS)]
-                    )
-                else:
-                    string += char.rjust(RJUST_SIZE)
-            print(string)
-
     def find_longest_path(self):
         return self.get_longest_path(self.start_tunnel_id, set(), set())
 
@@ -251,6 +213,34 @@ class Solver:
                 set(visited_connector_coords) | set([connector_coord])
             ) for neighbor_tunnel_id, connector_coord in viable_neighbors
         )
+
+    def print_tunnels(self, tunnel_ids=None):
+        RJUST_SIZE = 2
+        coord_to_tunnel_id = {
+            (x, y): id_
+            for id_, tunnel in self.tunnel_map.items()
+            for (x, y) in tunnel.path
+            if tunnel_ids is None or id_ in tunnel_ids
+        }
+
+        for y, row in enumerate(self.grid):
+            string = ''
+            for x, char in enumerate(row):
+                coord = (x, y)
+                if coord in self.wall_coords:
+                    string += '#'.rjust(RJUST_SIZE)
+                elif coord in self.tunnel_connector_nodes:
+                    string += '+'.rjust(RJUST_SIZE)
+                elif coord in coord_to_tunnel_id:
+                    tunnel_id = coord_to_tunnel_id[coord]
+                    string += color_string(
+                        str(tunnel_id).rjust(RJUST_SIZE),
+                        TERM_COLORS[tunnel_id % len(TERM_COLORS)]
+                    )
+                else:
+                    string += char.rjust(RJUST_SIZE)
+            print(string)
+
 
 def part_1(lines):
     return Solver(lines, respect_slopes=True).find_longest_path()

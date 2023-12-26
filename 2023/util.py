@@ -4,6 +4,8 @@ import requests
 import sys
 import time
 
+from termcolor import colored
+
 ALPHABET_LOWER = 'abcdefghijklmnopqrstuvwxyz'
 ALPHABET_UPPER = ALPHABET_LOWER.upper()
 
@@ -157,3 +159,23 @@ def run(day, part_1_fn, part_2_fn):
             print('---Real---\n', result)
             if measure_time:
                 print('Time:', duration)
+
+
+TERM_COLORS = [
+    'red',
+    'green',
+    'yellow',
+    'blue',
+    'magenta',
+    'cyan',
+    'light_red',
+    'light_green',
+    'light_yellow',
+    'light_blue',
+    'light_magenta',
+    'light_cyan',
+]
+
+
+def color_string(string, color):
+    return colored(string, color)
