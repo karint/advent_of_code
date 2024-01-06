@@ -1,14 +1,9 @@
 import os
-import sys
 
-"""
-A tree is visible if all of the other trees between it and an edge of the grid
-are shorter than it. Only consider trees in the same row or column; that is,
-only look up, down, left, or right from any given tree.
-"""
+from util import run
 
 
-def solution(lines):
+def part_1(lines):
     forest = [
         [int(tree_str) for tree_str in line.strip()]
         for line in lines
@@ -30,7 +25,7 @@ def solution(lines):
     return num_visible
     
 
-def solution2(lines):
+def part_2(lines):
     forest = [
         [int(tree_str) for tree_str in line.strip()]
         for line in lines
@@ -87,16 +82,5 @@ def solution2(lines):
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

@@ -1,7 +1,7 @@
 import os
-import sys
 
 from collections import defaultdict
+from util import run
 
 DIRECTIONS = ['N', 'S', 'W', 'E']
 
@@ -121,7 +121,7 @@ class Solver:
         proposed_coords_count = defaultdict(int)
         direction_index = self.round % len(DIRECTIONS)
         directions = DIRECTIONS[direction_index:] + DIRECTIONS[:direction_index]
-        print(directions)
+        # print(directions)
 
         for elf in self.elves:
             proposed = elf.propose_coord(self.occupied_coords, directions)
@@ -144,7 +144,7 @@ class Solver:
         print('-' * (self.max_x - self.min_x + 1))
 
 
-def solution(lines):
+def part_1(lines):
     elves = []
     for y, line in enumerate(lines):
         line = line.strip()
@@ -153,17 +153,17 @@ def solution(lines):
                 elves.append(Elf(x, y))
 
     solver = Solver(elves)
-    solver.print()
+    # solver.print()
 
     for round_num in range(10):
-        print('Round', round_num + 1)
+        # print('Round', round_num + 1)
         solver.conduct_round()
-        solver.print()
+        # solver.print()
         
     return solver.get_size() - len(solver.occupied_coords)
     
 
-def solution2(lines):
+def part_2(lines):
     elves = []
     for y, line in enumerate(lines):
         line = line.strip()
@@ -174,23 +174,12 @@ def solution2(lines):
     solver = Solver(elves)
 
     while not solver.is_done:
-        print('Round', solver.round + 1)
+        # print('Round', solver.round + 1)
         solver.conduct_round()
         
     return solver.round
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

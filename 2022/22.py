@@ -1,7 +1,7 @@
 import os
-import sys
 
 from collections import defaultdict
+from util import run
 
 
 class Direction:
@@ -340,7 +340,7 @@ class Solver:
 
         row = self.curr_y + 1
         column = self.curr_x + 1
-        print(row, column, facing_value)
+        # print(row, column, facing_value)
         return 1000 * row + 4 * column + facing_value
 
     def get_facing_char(self):
@@ -383,7 +383,7 @@ def parse_direction(line):
     return directions
 
 
-def solution(lines):
+def part_1(lines):
     map_width = 0
     directions = None
     grid = []
@@ -408,7 +408,7 @@ def solution(lines):
     return solver.get_password()
     
 
-def solution2(lines):
+def part_2(lines):
     map_width = 0
     directions = None
     grid = []
@@ -434,16 +434,5 @@ def solution2(lines):
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

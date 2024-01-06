@@ -2,6 +2,7 @@ import os
 import sys
 
 from collections import defaultdict
+from util import run
 
 
 class Direction:
@@ -115,8 +116,6 @@ class Solver:
             new_possible_current_locations -= occupied_coords
             possible_current_locations = new_possible_current_locations
 
-            if self.num_minutes % 100 == 0:
-                print(self.num_minutes, 'possible_current_locations:', len(possible_current_locations))
 
     def print(self):
         blizzards_at_coords = defaultdict(list)
@@ -125,7 +124,7 @@ class Solver:
 
         for y, row in enumerate(self.grid):
             if y == 0:
-                print(row.replace('.', 'E' if self.y == 0 else '.'))
+                # print(row.replace('.', 'E' if self.y == 0 else '.'))
                 continue
 
             curr_str = ''
@@ -143,15 +142,12 @@ class Solver:
                     else:
                         symbol = '#' if char == '#' else '.'
                 curr_str += symbol
-            print(curr_str)
+            # print(curr_str)
 
     def solve(self):
-        print('Initial setup:')
-
         while ((self.x, self.y) != self.goal_coord):
-            self.print()
+            # self.print()
             self.num_minutes += 1
-            print('\nMinute %d...' % self.num_minutes)
             occupied_coords = set(self.wall_coords)
             for blizzard in self.blizzards:
                 blizzard.advance(self.min_x, self.max_x, self.min_y, self.max_y)
@@ -219,7 +215,7 @@ class Solver:
         self.print()
 
 
-def solution(lines):
+def part_1(lines):
     grid = []
     blizzards = []
     for y, line in enumerate(lines):
@@ -233,23 +229,12 @@ def solution(lines):
     solver.simulate()
 
     return solver.num_minutes
-    
 
-def solution2(lines):
-    pass
+
+def part_2(lines):
+    return part_1(lines)
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

@@ -1,6 +1,7 @@
 import math
 import os
-import sys
+
+from util import run
 
 WIDTH = 7
 UNITS_FROM_LEFT = 2
@@ -130,7 +131,7 @@ class Simulation(object):
             rock_coords = [(x, y - 1) for x, y in rock_coords]
 
 
-def solution(lines):
+def part_1(lines):
     resting_rocks = 2022
     jetstream = lines[0].strip()
     sim = Simulation(jetstream)
@@ -142,7 +143,7 @@ def solution(lines):
     return sim.highest_rock + 1
     
 
-def solution2(lines):
+def part_2(lines):
     resting_rocks = 1000000000000
     # rocks_per_loop = 35
     # rocks_before_loop = 14
@@ -172,19 +173,11 @@ def solution2(lines):
         sim.new_rock_fall()
         # sim.print_chamber()
 
-    print('height_before_loop', height_before_loop)
-    print('height_after_first_loop', height_after_first_loop)
-    print('height_after_second_loop', height_after_second_loop)
-    print('height_after_third_loop', height_after_third_loop)
-
     # How high the structure was before we started looping, minus the latest row
     height_per_loop = height_after_third_loop - height_after_second_loop
-    print('height_per_loop', height_per_loop)
 
     num_loops = math.floor((resting_rocks - rocks_before_loop) / rocks_per_loop)
-    print('num_loops', num_loops)
     remainder = (resting_rocks - rocks_before_loop) % rocks_per_loop
-    print('remainder', remainder)
 
     remainder_sim = Simulation(jetstream)
     while (remainder_sim.settled_rock_count < rocks_before_loop + rocks_per_loop + remainder):
@@ -195,16 +188,5 @@ def solution2(lines):
    
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

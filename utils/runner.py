@@ -24,23 +24,29 @@ def test_all(correct_answers):
             print('Day %s:' % day)
             lines = file.readlines()
 
-            start = time.perf_counter()
-            part_1_output = solution_file.part_1(lines)
-            duration = time.perf_counter() - start
-            print('\tPart 1: %s (%.6fs)' % (
-                'Pass' if part_1_output == part_1_solution
-                else  'Fail: %s should be %s' % (part_1_output, part_1_solution),
-                duration
-            ))
+            try:
+                start = time.perf_counter()
+                part_1_output = solution_file.part_1(lines)
+                duration = time.perf_counter() - start
+                print('\tPart 1: %s (%.6fs)' % (
+                    'Pass' if part_1_output == part_1_solution
+                    else  'Fail: %s should be %s' % (part_1_output, part_1_solution),
+                    duration
+                ))
+            except Exception as e:
+                print('\tPart 1: %s (%s)' % ('Error', e))
 
-            start = time.perf_counter()
-            part_2_output = solution_file.part_2(lines)
-            duration = time.perf_counter() - start
-            print('\tPart 2: %s (%.6fs)' % (
-                'Pass' if part_2_output == part_2_solution
-                else 'Fail: %s should be %s' % (part_2_output, part_2_solution),
-                duration
-            ))
+            try:
+                start = time.perf_counter()
+                part_2_output = solution_file.part_2(lines)
+                duration = time.perf_counter() - start
+                print('\tPart 2: %s (%.6fs)' % (
+                    'Pass' if part_2_output == part_2_solution
+                    else 'Fail: %s should be %s' % (part_2_output, part_2_solution),
+                    duration
+                ))
+            except Exception as e:
+                print('\tPart 1: %s (%s)' % ('Error', e))
 
 
 def run(day, part_1_fn, part_2_fn):

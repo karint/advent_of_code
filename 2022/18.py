@@ -1,8 +1,9 @@
 import os
-import sys
+
+from util import run
 
 
-def solution(lines):
+def part_1(lines):
     all_cubes = set()
     for i, line in enumerate(lines):
         line = line.strip()
@@ -49,11 +50,11 @@ def expand_air(all_lava_cubes, all_air_cubes, min_x, max_x, min_y, max_y, min_z,
 
         # Nothing was added -- done filling!
         if size_before == len(all_air_cubes):
-            print('num air cubes is', len(all_air_cubes))
+            # print('num air cubes is', len(all_air_cubes))
             return all_air_cubes
     
 
-def solution2(lines):
+def part_2(lines):
     all_lava_cubes = set()
     min_x, max_x, min_y, max_y, min_z, max_z = None, None, None, None, None, None
     for i, line in enumerate(lines):
@@ -97,9 +98,9 @@ def solution2(lines):
     min_z -= 1
     max_z += 1
 
-    print(min_x, max_x)
-    print(min_y, max_y)
-    print(min_z, max_z)
+    # print(min_x, max_x)
+    # print(min_y, max_y)
+    # print(min_z, max_z)
 
     # Fill the box with air and find surface area of it
     all_air_cubes = set([(min_x, min_y, min_z)])
@@ -130,30 +131,15 @@ def solution2(lines):
         if (x, y, z - 1) not in all_air_cubes:
             num_surfaces += 1
 
-    print(num_surfaces)
-
     # Subtract outside of box surface area
     width = max_x - min_x + 1
     height = max_y - min_y + 1
     depth = max_z - min_z + 1
-
-    print(width, height, depth)
 
     num_surfaces -= 2 * (width * height + height * depth + width * depth)
     return num_surfaces
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

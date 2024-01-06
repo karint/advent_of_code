@@ -1,5 +1,7 @@
 import os
-import sys
+
+from util import run
+
 
 class Coord(object):
     def __init__(self, x, y):
@@ -38,7 +40,7 @@ class Coord(object):
         return (self.x, self.y)
     
 
-def solution(lines):
+def part_1(lines):
     visited = set()  # Set of visited coordinates (x, y)
     head_coord = Coord(0 , 0)
     tail_coord = Coord(0 , 0)
@@ -57,7 +59,7 @@ def solution(lines):
     return len(visited)
     
 
-def solution2(lines):
+def part_2(lines):
     NUM_KNOTS = 10
     visited = set()  # Set of visited coordinates (x, y)
     coords = [  # Array of 10 knot coords
@@ -82,16 +84,5 @@ def solution2(lines):
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

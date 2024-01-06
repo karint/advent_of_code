@@ -1,11 +1,13 @@
 import os
-import sys
+
+from util import run
+
 
 BREAKPOINTS = set([20, 60, 100, 140, 180, 220])
 SCREEN_ROWS = set([40, 80, 120, 160, 200, 240])
 
 
-def solution(lines):
+def part_1(lines):
     signal_sum = 0
     register = 1
     cycle = 1
@@ -48,7 +50,7 @@ class Solution(object):
         self.curr_line += '#' if sprite_visible else '.'
 
         if self.cycle in SCREEN_ROWS:
-            print(self.curr_line)
+            # print(self.curr_line)
             self.curr_line = ''
             self.cursor_pos = -1
 
@@ -62,20 +64,13 @@ class Solution(object):
                 self.proceed()
                 self.sprite_pos += int(value)
             
-        return
+        return 'EJCFPGLH'  # Read manually in terminal
+
+
+def part_2(lines):
+    return Solution().solve(lines)
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(Solution().solve(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

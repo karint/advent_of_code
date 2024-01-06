@@ -1,8 +1,8 @@
 import json
 import os
-import sys
 
 from collections import defaultdict
+from util import run
 
 
 OPERATIONS = {
@@ -115,7 +115,7 @@ DEPENDENCIES = defaultdict(set)
 
 MONKEYS = {}
 
-def solution(lines):
+def part_1(lines):
     for line in lines:
         line = line.strip()
         [monkey_id, operation_string] = line.split(': ')
@@ -152,7 +152,7 @@ def solution(lines):
 ME = 'humn'
 
 
-def solution2(lines):
+def part_2(lines):
     for line in lines:
         line = line.strip()
         [monkey_id, operation_string] = line.split(': ')
@@ -232,7 +232,7 @@ def solution2(lines):
             other_monkey.store_value(monkey.id, value)
 
     target_value = int(MONKEYS[semi_root_id].yell())
-    print('Target value', target_value)
+    # print('Target value', target_value)
 
     # Observe the branch I'm in
     my_branch_ids = branch_1_ids if ME in branch_1_ids else branch_2_ids
@@ -257,7 +257,7 @@ def solution2(lines):
 
     # Solve the other ones first
     solvable_ids = my_branch_ids - dependent_on_me_ids
-    print(solvable_ids)
+    # print(solvable_ids)
 
     distances_map = [
         (v, k) for k, v in distance_from_root.items() if k in solvable_ids
@@ -286,20 +286,9 @@ def solution2(lines):
                     return int(monkey.value)
                 new_set.append(monkey)
         curr_set = new_set
-        print(curr_set)
+        # print(curr_set)
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

@@ -1,12 +1,7 @@
 import os
-import sys
 
-"""
-"SNAFU works the same way, except it uses powers of five
-instead of ten. Starting from the right, you have a ones
-place, a fives place, a twenty-fives place, a
-one-hundred-and-twenty-fives place, and so on. It's that easy!"
-"""
+from util import run
+
 
 POWER = 5
 
@@ -67,7 +62,7 @@ def convert_to_snafu(decimal):
     return string_so_far.lstrip('0')
 
 
-def solution(lines):
+def part_1(lines):
     max_len = 0
     snafu_numbers = []
 
@@ -80,33 +75,20 @@ def solution(lines):
     start = 1
     for i in range(max_len):
         MULTIPLIERS.append(POWER**i)
-    print('multipliers', MULTIPLIERS)
 
     decimal_sum = 0
     for snafu in snafu_numbers:
         decimal = convert_to_decimal(snafu)
-        print(snafu,' ->', decimal, '->', convert_to_snafu(decimal))
+        # print(snafu,' ->', decimal, '->', convert_to_snafu(decimal))
         decimal_sum += decimal
 
-    print('sum', decimal_sum)
     return convert_to_snafu(decimal_sum)
 
 
-def solution2(lines):
-    pass
+def part_2(lines):
+    return None
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

@@ -1,6 +1,7 @@
 import json
 import os
-import sys
+
+from util import run
 
 
 def compare_ints(left, right):
@@ -59,7 +60,7 @@ def compare_lists(list_1, list_2):
     return
 
 
-def solution(lines):
+def part_1(lines):
     pair_num = 0
     first_line, second_line = None, None
     right_pairs = []
@@ -71,19 +72,15 @@ def solution(lines):
         elif i % 3 == 1:
             second_line = line
             pair_num += 1
-            if pair_num == 121:
-                print(first_line)
-                print(second_line)
             left = json.loads(first_line)
             right = json.loads(second_line)
             if compare_lists(left, right):
                 right_pairs.append(pair_num)
         
-    print(right_pairs)
     return sum(right_pairs)
     
 
-def solution2(lines):
+def part_2(lines):
     order = []
     divider_1 = [[2]]
     divider_2 = [[6]]
@@ -132,24 +129,9 @@ def solution2(lines):
     if not inserted:
         order.append(divider_2)
 
-
-    for item in order:
-        print(item)
     return divider_index_1 * divider_index_2
 
 
-
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

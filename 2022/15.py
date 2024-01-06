@@ -1,9 +1,8 @@
 import os
 import re
-import sys
-import time
 
 from collections import defaultdict
+from util import run
 
 REGEX = 'Sensor at x=(.+), y=(.+): closest beacon is at x=(.+), y=(.+)'
 
@@ -20,7 +19,7 @@ def mark(row, x):
     row[x] = '#'
 
 
-def solution(lines):
+def part_1(lines):
     TARGET_ROW_INDEX = 2000000
     target_row = {}
     beacons = {}
@@ -55,7 +54,7 @@ def add_range(coverage, row_index, new_range):
 def get_frequency(x, y):
     return x * 4000000 + y
 
-def solution2(lines):
+def part_2(lines):
     MIN = 0
     # MAX = 20
     MAX = 4000000
@@ -98,25 +97,13 @@ def solution2(lines):
         most_max = None
         for range_min, range_max in ranges:
             if most_max is not None and range_min > most_max:
-                print(row_index, ranges)
+                # print(row_index, ranges)
                 return get_frequency(most_max, row_index)
 
             if most_max is None or range_max > most_max:
                 most_max = range_max
 
+
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(time.time())
-        print(solution2(lines))
-        print(time.time())
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

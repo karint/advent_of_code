@@ -2,9 +2,9 @@ import json
 import math
 import os
 import re
-import sys
 
 from collections import defaultdict
+from util import run
 
 
 REGEX = 'Blueprint (\d+): Each ore robot costs (\d+) ore. Each clay robot costs (\d+) ore. Each obsidian robot costs (\d+) ore and (\d+) clay. Each geode robot costs (\d+) ore and (\d+) obsidian.'
@@ -157,7 +157,7 @@ class Simulator(object):
             # Record geodes if surpassed max
             if sim.resources[Type.GEODE] > self.most_geodes:
                 self.most_geodes = sim.resources[Type.GEODE]
-                print('Most geodes:', self.most_geodes)
+                # print('Most geodes:', self.most_geodes)
 
             # Prune if no time left
             if not is_time_left:
@@ -171,7 +171,7 @@ class Simulator(object):
                 # Record geodes if surpassed max
                 if sim.resources[Type.GEODE] > self.most_geodes:
                     self.most_geodes = sim.resources[Type.GEODE]
-                    print('Most geodes:', self.most_geodes)
+                    # print('Most geodes:', self.most_geodes)
                 continue
 
             for next_robot_type in next_robot_types:
@@ -180,7 +180,7 @@ class Simulator(object):
         self.sims = new_sims
 
 
-def solution(lines):
+def part_1(lines):
     num_minutes = 24
     total_quality_levels = 0
 
@@ -225,17 +225,17 @@ def solution(lines):
         simulator = Simulator(costs, num_minutes)
 
         while simulator.sims:
-            print('sims left:', len(simulator.sims))
+            # print('sims left:', len(simulator.sims))
             simulator.run()
 
         quality_level = id_ * simulator.most_geodes
-        print(id_, simulator.most_geodes, quality_level)
+        # print(id_, simulator.most_geodes, quality_level)
         total_quality_levels += quality_level
 
     return total_quality_levels
     
 
-def solution2(lines):
+def part_2(lines):
     num_minutes = 32
     multiplied = 1
     max_blueprints = 3
@@ -281,26 +281,15 @@ def solution2(lines):
         simulator = Simulator(costs, num_minutes)
 
         while simulator.sims:
-            print('sims left:', len(simulator.sims))
+            # print('sims left:', len(simulator.sims))
             simulator.run()
 
-        print(id_, simulator.most_geodes)
+        # print(id_, simulator.most_geodes)
         multiplied *= simulator.most_geodes
 
     return multiplied
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

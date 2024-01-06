@@ -1,5 +1,7 @@
 import os
-import sys
+
+from util import run
+
 
 class PathGrid(object):
     def __init__(self, lines, starting_char, ending_char, can_reach, replacement_map=None):
@@ -57,7 +59,7 @@ class PathGrid(object):
 
             viable_paths = new_paths
 
-def solution(lines):
+def part_1(lines):
     can_reach = (
         lambda grid, curr_x, curr_y, target_x, target_y:
         grid[curr_y][curr_x] + 1 >= grid[target_y][target_x]
@@ -77,21 +79,10 @@ def solution(lines):
     ).find_shortest_path_length()
 
 
-def solution2(lines):
-    pass
+def part_2(lines):
+    return part_1(lines)
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

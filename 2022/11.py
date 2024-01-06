@@ -1,5 +1,7 @@
+import math
 import os
-import sys
+
+from util import run
 
 
 class Monkey(object):
@@ -23,10 +25,11 @@ class Monkey(object):
     def test(self, x):
         return x % self.divisor == 0
 
-    def take_round(self):
+    def take_round(self, reduce_worry_level):
         for item in self.items:
             worry_level = self.operation(item) % self.common_divisor
-            # worry_level = int(worry_level/3.0)
+            if reduce_worry_level:
+                worry_level = int(worry_level/3.0)
             target_monkey = self.target_if_true if self.test(worry_level) else self.target_if_false
             self.inspect_count += 1
             self.toss(worry_level, monkeys[target_monkey])
@@ -34,7 +37,6 @@ class Monkey(object):
     def toss(self, new_worry_level, target_monkey):
         self.items = self.items[1:]
         target_monkey.items.append(new_worry_level)
-
 
 
 # Initialize monkeys
@@ -129,12 +131,11 @@ TEST_MONKEYS = [
     ),
 ]
 
-NUM_ROUNDS = 10000
 
 monkeys = MONKEYS
 
 
-def solution(lines):
+def part_1(lines):
     common_divisor = 1
     for monkey in monkeys:
         common_divisor *= monkey.divisor
@@ -142,34 +143,30 @@ def solution(lines):
     for monkey in monkeys:
         monkey.common_divisor = common_divisor
 
-    for num_round in range(NUM_ROUNDS):
-        if num_round % 1000 == 0:
-            print('Round ', num_round)
-        # print('\nRound', num_round)
+    for num_round in range(20):
         for monkey in monkeys:
-            monkey.take_round()
+            monkey.take_round(True)
 
     inspect_counts = sorted([monkey.inspect_count for monkey in monkeys], reverse=True)
-    print(inspect_counts[0])
-    print(inspect_counts[1])
-    print(inspect_counts[0]*inspect_counts[1])
+    return inspect_counts[0] * inspect_counts[1]
     
 
-def solution2(lines):
-    pass
+def part_2(lines):
+    common_divisor = 1
+    for monkey in monkeys:
+        common_divisor *= monkey.divisor
+
+    for monkey in monkeys:
+        monkey.common_divisor = common_divisor
+
+    for num_round in range(10000):
+        for monkey in monkeys:
+            monkey.take_round(False)
+
+    inspect_counts = sorted([monkey.inspect_count for monkey in monkeys], reverse=True)
+    return inspect_counts[0] * inspect_counts[1]
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

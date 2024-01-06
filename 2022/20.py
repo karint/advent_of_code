@@ -1,7 +1,7 @@
 import os
-import sys
 
 from collections import Counter
+from util import run
 
 class Node(object):
     def __init__(self, value, prev, next):
@@ -103,7 +103,7 @@ class MixList(object):
 
 CHECK_AT = [1000, 2000, 3000]
 
-def solution(lines):
+def part_1(lines):
     values = []
     for line in lines:
         line = line.strip()
@@ -117,7 +117,7 @@ def solution(lines):
     curr_node = mix_list.zero_node
     for i in range(max(CHECK_AT) + 1):
         if i in CHECK_AT:
-            print(i, ':', curr_node.value)
+            # print(i, ':', curr_node.value)
             total_sum += curr_node.value
         curr_node = curr_node.next
 
@@ -127,7 +127,7 @@ def solution(lines):
 DECRYPTION_KEY = 811589153
 TIMES_TO_MIX = 10
 
-def solution2(lines):
+def part_2(lines):
     values = []
     for line in lines:
         line = line.strip()
@@ -142,7 +142,7 @@ def solution2(lines):
     curr_node = mix_list.zero_node
     for i in range(max(CHECK_AT) + 1):
         if i in CHECK_AT:
-            print(i, ':', curr_node.value)
+            # print(i, ':', curr_node.value)
             total_sum += curr_node.value
         curr_node = curr_node.next
 
@@ -150,16 +150,5 @@ def solution2(lines):
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
-    part_2 = len(args) > 2 and args[2] == '2'
-
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    if part_2:
-        print(solution2(lines))
-    else:
-        print(solution(lines))
+    run(day, part_1, part_2)

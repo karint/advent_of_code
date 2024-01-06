@@ -1,3 +1,7 @@
+import os
+
+from util import run
+
 ROCK = 1  # A, X
 PAPER = 2  # B, Y
 SCISSORS = 3  # C, Z
@@ -27,10 +31,7 @@ WIN_COMBOS = {
 	you: opponent for opponent, you in LOSS_COMBOS.items()
 }
 
-if __name__ == '__main__':
-	with open('2_input.txt', 'r') as file:
-		lines = file.readlines()
-
+def part_1(lines):
 	points = 0
 	for line in lines:
 		opponent, result = line.strip().split(' ')
@@ -46,7 +47,13 @@ if __name__ == '__main__':
 
 		points += POINT_MAP[you]
 
+	return points
 
-	print(points)
+
+def part_2(lines):
+	return part_1(lines)
 
 
+if __name__ == '__main__':
+    day = os.path.basename(__file__).replace('.py', '')
+    run(day, part_1, part_2)

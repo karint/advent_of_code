@@ -1,10 +1,9 @@
 import json
 import os
 import re
-import sys
-import time
 
 from collections import defaultdict
+from util import run
 
 REGEX = 'Valve (\w+) has flow rate=(\d+); (.+) to valve(\w*) (.+)'
 
@@ -181,18 +180,16 @@ class Solver:
         return most_pressure
 
 
-def solution(lines):
+def part_1(lines):
     solver = Solver(lines)
     most_pressure = solver.solve()
     return most_pressure
 
 
+def part_2(lines):
+    return part_1(lines)
+
+
 if __name__ == '__main__':
-    args = sys.argv
-    is_test = len(args) > 1 and args[1] == 't'
     day = os.path.basename(__file__).replace('.py', '')
-
-    with open('%s%s.txt' % (day, '_test' if is_test else ''), 'r') as file:
-        lines = file.readlines()
-
-    print(solution(lines))
+    run(day, part_1, part_2)

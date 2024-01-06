@@ -1,15 +1,14 @@
-DAY = 3
-IS_TEST = False
+import os
 
-ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+from util import ALPHABET_LOWER, ALPHABET_UPPER, run
+
 POINTS = {
-	letter: index + 1 for index, letter in enumerate(ALPHABET)
+	letter: index + 1
+	for index, letter in enumerate(ALPHABET_LOWER + ALPHABET_UPPER)
 }
 
-if __name__ == '__main__':
-	with open('%s%s.txt' % (DAY, '_test' if IS_TEST else ''), 'r') as file:
-		lines = file.readlines()
 
+def part_1(lines):
 	points = 0
 	for line in lines:
 		line = line.strip()
@@ -17,7 +16,32 @@ if __name__ == '__main__':
 		first = set(line[:size])
 		second = set(line[size:])
 		common = first.intersection(second).pop()
-		print(POINTS[common])
 		points += POINTS[common]
 
-	print(points)
+	return points
+
+
+def part_2(lines):
+	points = 0
+	curr_set = set()
+	count = 0
+
+	for line in lines:
+		line = line.strip()
+		if not curr_set:
+			curr_set = set(line)
+		else:
+			curr_set &= set(line)
+
+		count += 1
+		if count == 3:
+			common = curr_set.pop()
+			points += POINTS[common]
+			count = 0
+
+	return points
+
+
+if __name__ == '__main__':
+    day = os.path.basename(__file__).replace('.py', '')
+    run(day, part_1, part_2)
