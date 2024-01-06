@@ -2,11 +2,7 @@
 File used to test and confirm that all answers are still correct.
 Useful when refactoring utils that could impact multiple files.
 """
-import importlib
-import sys
-import time
-
-from util import run
+from util import test_all
 
 
 CORRECT_ANSWERS = [
@@ -37,35 +33,6 @@ CORRECT_ANSWERS = [
     ('25', 612945, None),
 ]
 
+
 if __name__ == '__main__':
-    args = sys.argv
-    if len(args) == 2:
-        specific_day = args[1]
-    else:
-        specific_day = None
-
-    for day, part_1_solution, part_2_solution in CORRECT_ANSWERS:
-        if specific_day is not None and specific_day != day:
-            continue
-        solution_file = importlib.import_module(day)
-        with open('%s.txt' % day, 'r') as file:
-            print('Day %s:' % day)
-            lines = file.readlines()
-
-            start = time.perf_counter()
-            part_1_output = solution_file.part_1(lines)
-            duration = time.perf_counter() - start
-            print('\tPart 1: %s (%.6fs)' % (
-                'Pass' if part_1_output == part_1_solution
-                else  'Fail: %s should be %s' % (part_1_output, part_1_solution),
-                duration
-            ))
-
-            start = time.perf_counter()
-            part_2_output = solution_file.part_2(lines)
-            duration = time.perf_counter() - start
-            print('\tPart 2: %s (%.6fs)' % (
-                'Pass' if part_2_output == part_2_solution
-                else 'Fail: %s should be %s' % (part_2_output, part_2_solution),
-                duration
-            ))
+    test_all(CORRECT_ANSWERS)
