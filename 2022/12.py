@@ -1,6 +1,6 @@
 import os
 
-from util import run
+from util import ALPHABET_LOWER, run
 
 
 class PathGrid(object):
@@ -65,7 +65,7 @@ def part_1(lines):
         grid[curr_y][curr_x] + 1 >= grid[target_y][target_x]
     )
     replacement_map = {
-        c: ord(c) for c in 'abcdefghijklmnopqrstuvwxyz'
+        c: ord(c) for c in ALPHABET_LOWER
     }
     replacement_map['S'] = ord('a')
     replacement_map['E'] = ord('z')
@@ -80,7 +80,23 @@ def part_1(lines):
 
 
 def part_2(lines):
-    return part_1(lines)
+    can_reach = (
+        lambda grid, curr_x, curr_y, target_x, target_y:
+        grid[curr_y][curr_x] + 1 >= grid[target_y][target_x]
+    )
+    replacement_map = {
+        c: ord(c) for c in ALPHABET_LOWER
+    }
+    replacement_map['S'] = ord('a')
+    replacement_map['E'] = ord('z')
+
+    return PathGrid(
+        lines,
+        'a',
+        'E',
+        can_reach,
+        replacement_map=replacement_map,
+    ).find_shortest_path_length()
 
 
 if __name__ == '__main__':

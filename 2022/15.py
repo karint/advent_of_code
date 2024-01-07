@@ -41,7 +41,7 @@ def part_1(lines):
         row_delta = dist - abs(sensor_y - TARGET_ROW_INDEX)
         if row_delta > 0:
             mark(target_row, sensor_x)
-            for x in range(row_delta):
+            for x in range(row_delta + 1):
                 mark(target_row, sensor_x - x)
                 mark(target_row, sensor_x + x)
 
@@ -56,7 +56,6 @@ def get_frequency(x, y):
 
 def part_2(lines):
     MIN = 0
-    # MAX = 20
     MAX = 4000000
 
     # Map of row to ranges that are not possible for a beacon to be

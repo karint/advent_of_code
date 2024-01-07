@@ -2,15 +2,17 @@ import os
 
 from util import run
 
-ROCK = 1  # A, X
-PAPER = 2  # B, Y
-SCISSORS = 3  # C, Z
+EQUIVALENT_MAPPING = {
+	'X': 'A',
+	'Y': 'B',
+	'Z': 'C',
+}
 
 LOSS = 0 # X
 DRAW = 3 # Y
 WIN = 6 # Z
 
-MAPPING = {
+SCORE_MAPPING = {
 	'X': LOSS,
 	'Y': DRAW,
 	'Z': WIN,
@@ -22,7 +24,7 @@ POINT_MAP = {
 	'C': 3,
 }
 
-LOSS_COMBOS = { # if you play the key and opponent plays the value
+LOSS_COMBOS = { # if your opponent plays the key and you play the value
 	'A': 'C',
 	'B': 'A',
 	'C': 'B',
@@ -34,9 +36,25 @@ WIN_COMBOS = {
 def part_1(lines):
 	points = 0
 	for line in lines:
+		opponent, you = line.strip().split(' ')
+		you = EQUIVALENT_MAPPING[you]
+		points += POINT_MAP[you]
+		if (opponent, you) in LOSS_COMBOS.items():
+			points += LOSS
+		elif (opponent, you) in WIN_COMBOS.items():
+			points += WIN
+		else:
+			points += DRAW
+
+	return points
+
+
+def part_2(lines):
+	points = 0
+	for line in lines:
 		opponent, result = line.strip().split(' ')
 
-		points += MAPPING[result]
+		points += SCORE_MAPPING[result]
 
 		if result == 'X':
 			you = LOSS_COMBOS[opponent]
@@ -48,10 +66,6 @@ def part_1(lines):
 		points += POINT_MAP[you]
 
 	return points
-
-
-def part_2(lines):
-	return part_1(lines)
 
 
 if __name__ == '__main__':

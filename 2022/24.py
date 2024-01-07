@@ -51,18 +51,20 @@ class Path:
 
 
 class Solver:
-    def __init__(self, grid, blizzards):
+    def __init__(self, grid, blizzards, round_trip=False):
         self.grid = grid
         self.blizzards = blizzards
         self.min_x, self.max_x = 1, len(self.grid[0]) - 1
         self.min_y, self.max_y = 1, len(self.grid) - 1
         self.num_minutes = 0
-        self.goal_coord = (self.max_x - 1, self.max_y)
         self.goal_coords = [
             (self.max_x - 1, self.max_y),
             (1, 0),
             (self.max_x - 1, self.max_y),
         ]
+
+        if not round_trip:
+            self.goal_coords = self.goal_coords[:1]
 
         self.wall_coords = set()
         for y, row in enumerate(self.grid):
@@ -232,7 +234,19 @@ def part_1(lines):
 
 
 def part_2(lines):
-    return part_1(lines)
+    grid = []
+    blizzards = []
+    for y, line in enumerate(lines):
+        line = line.strip()
+        grid.append(line)
+        for x, char in enumerate(line):
+            if char in DIRECTIONS:
+                blizzards.append(Blizzard(x, y, char))
+
+    solver = Solver(grid, blizzards, round_trip=True)
+    solver.simulate()
+
+    return solver.num_minutes
 
 
 if __name__ == '__main__':

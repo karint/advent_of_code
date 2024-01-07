@@ -16,14 +16,15 @@ class Valve:
 
 
 class Solver:
-    def __init__(self, lines):
+    def __init__(self, lines, num_entities, total_min):
         self.valves = {}
         self.populate_valves(lines)
 
         self.flows = {
             valve.id: valve.flow_rate for valve in self.valves.values() if valve.flow_rate > 0
         }
-        self.total_time = 26
+        self.num_entities = num_entities
+        self.total_time = total_min
         self.distances = defaultdict(dict)
         self.populate_distances()
 
@@ -149,45 +150,50 @@ class Solver:
         ]
         all_pressures.sort(reverse=True)
 
-        # Find most common start in the top
-        counts = defaultdict(int)
-        for _, order in all_pressures[:50]:
-            counts[order[0]] += 1
+        if self.num_entities == 1:
+            most_pressure = all_pressures[0][0]
+        else:
+            # Find most common start in the top
+            counts = defaultdict(int)
+            for _, order in all_pressures[:50]:
+                counts[order[0]] += 1
 
-        best_start_id = None
-        max_count = 0
-        for valve_id, count in counts.items():
-            if count > max_count:
-                max_count = count
-                best_start_id = valve_id
+            best_start_id = None
+            max_count = 0
+            for valve_id, count in counts.items():
+                if count > max_count:
+                    max_count = count
+                    best_start_id = valve_id
 
-        all_other_pressures = [
-            (pressure, order)
-            for pressure, order in all_pressures
-            if best_start_id not in order
-        ]
+            all_other_pressures = [
+                (pressure, order)
+                for pressure, order in all_pressures
+                if best_start_id not in order
+            ]
 
-        most_pressure = 0
-        for pressure, order in all_pressures[:500]:
-            order = set(order)
-            for pressure_2, order_2 in all_other_pressures[:500]:
-                if order & set(order_2):
-                    continue
+            most_pressure = 0
+            for pressure, order in all_pressures[:500]:
+                order = set(order)
+                for pressure_2, order_2 in all_other_pressures[:500]:
+                    if order & set(order_2):
+                        continue
 
-                if pressure + pressure_2 > most_pressure:
-                    most_pressure = pressure + pressure_2
+                    if pressure + pressure_2 > most_pressure:
+                        most_pressure = pressure + pressure_2
 
         return most_pressure
 
 
 def part_1(lines):
-    solver = Solver(lines)
+    solver = Solver(lines, 1, 30)
     most_pressure = solver.solve()
     return most_pressure
 
 
 def part_2(lines):
-    return part_1(lines)
+    solver = Solver(lines, 2, 26)
+    most_pressure = solver.solve()
+    return most_pressure
 
 
 if __name__ == '__main__':

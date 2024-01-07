@@ -129,7 +129,7 @@ SECTION_MAPPINGS = {
 
 
 class Solver:
-    def __init__(self, grid, directions):
+    def __init__(self, grid, directions, normal_wrap=True):
         self.grid = grid
         self.grid_width = len(self.grid[0])
 
@@ -144,11 +144,17 @@ class Solver:
                 self.curr_x = i
                 break
 
-        # self.init_wrap_map()
+        self.normal_wrap = normal_wrap
+        if self.normal_wrap:
+            self.init_wrap_map()
 
     def init_wrap_map(self):
-        # Map of direction to off-grid coordinate to new coordinate. Will
+        """
+        Map of direction to off-grid coordinate to new coordinate. Will
         # map to self if rock is in the way.
+
+        TODO: Make these (x, y) instead of (y, x) -- yuck!
+        """
         self.wrap_map = defaultdict(dict)
         for y, row in enumerate(self.grid):
             left_padding = self.grid_width - len(row.lstrip())
@@ -197,7 +203,6 @@ class Solver:
             else:
                 self.wrap_map[Direction.DOWN][(row, x)] = (wrap_row, x)
 
-
     def solve(self, print_output=False):
         if print_output:
             self.print()
@@ -243,72 +248,78 @@ class Solver:
                 new_y >= len(self.grid) or
                 self.grid[new_y][new_x] == ' '
             ):
-                # We stepped off the edge or into the abyss -- it's warping time!
-                curr_section = None
-                for section, [
-                    (curr_min_x, curr_max_x),
-                    (curr_min_y, curr_max_y)
-                ] in CUBE_SECTIONS.items():
-                    if (
-                        self.curr_x >= curr_min_x and
-                        self.curr_x < curr_max_x and
-                        self.curr_y >= curr_min_y and
-                        self.curr_y < curr_max_y
-                    ):
-                        curr_section = section
-                        break
+                if self.normal_wrap:
+                    # Normal wrap
+                    if (new_y, new_x) in self.wrap_map[self.facing]:
+                        new_y, new_x = self.wrap_map[self.facing][(new_y, new_x)]
+                    new_direction = self.facing
+                else:
+                    # We stepped off the edge or into the abyss -- it's warping time!
+                    curr_section = None
+                    for section, [
+                        (curr_min_x, curr_max_x),
+                        (curr_min_y, curr_max_y)
+                    ] in CUBE_SECTIONS.items():
+                        if (
+                            self.curr_x >= curr_min_x and
+                            self.curr_x < curr_max_x and
+                            self.curr_y >= curr_min_y and
+                            self.curr_y < curr_max_y
+                        ):
+                            curr_section = section
+                            break
 
-                (next_section, new_direction) = SECTION_MAPPINGS[curr_section][self.facing]
-                [
-                    (next_min_x, next_max_x),
-                    (next_min_y, next_max_y)
-                ] = CUBE_SECTIONS[next_section]
+                    (next_section, new_direction) = SECTION_MAPPINGS[curr_section][self.facing]
+                    [
+                        (next_min_x, next_max_x),
+                        (next_min_y, next_max_y)
+                    ] = CUBE_SECTIONS[next_section]
 
-                if curr_section == next_section:
-                    raise Exception('Stepped off an edge and stayed in the same section?')
+                    if curr_section == next_section:
+                        raise Exception('Stepped off an edge and stayed in the same section?')
 
-                # Calculate new coordinate if we take this step
-                old_direction = self.facing
-                if new_direction == Direction.LEFT:
-                    new_x = next_max_x - 1
-                    if old_direction == Direction.UP:
-                        new_y = next_min_y + curr_max_x - self.curr_x - 1
-                    elif old_direction == Direction.DOWN:
-                        new_y = next_min_y + self.curr_x - curr_min_x
-                    elif old_direction == Direction.LEFT:
-                        new_y = next_min_y + self.curr_y - curr_min_y
-                    elif old_direction == Direction.RIGHT:
-                        new_y = next_min_y + curr_max_y - self.curr_y - 1
-                elif new_direction == Direction.RIGHT:
-                    new_x = next_min_x
-                    if old_direction == Direction.DOWN:
-                        new_y = next_min_y + curr_max_x - self.curr_x - 1
-                    elif old_direction == Direction.UP:
-                        new_y = next_min_y + self.curr_x - curr_min_x
-                    elif old_direction == Direction.RIGHT:
-                        new_y = next_min_y + self.curr_y - curr_min_y
-                    elif old_direction == Direction.LEFT:
-                        new_y = next_min_y + curr_max_y - self.curr_y - 1
-                elif new_direction == Direction.UP:
-                    new_y = next_max_y - 1
-                    if old_direction == Direction.LEFT:
-                        new_x = next_min_x + curr_max_y - self.curr_y - 1
-                    elif old_direction == Direction.RIGHT:
-                        new_x = next_min_x + self.curr_y - curr_min_y
-                    elif old_direction == Direction.UP:
-                        new_x = next_min_x + self.curr_x - curr_min_x
-                    elif old_direction == Direction.DOWN:
-                        new_x = next_min_x + curr_max_x - self.curr_x - 1
-                elif new_direction == Direction.DOWN:
-                    new_y = next_min_y
-                    if old_direction == Direction.RIGHT:
-                        new_x = next_min_x + curr_max_y - self.curr_y - 1
-                    elif old_direction == Direction.LEFT:
-                        new_x = next_min_x + self.curr_y - curr_min_y
-                    elif old_direction == Direction.DOWN:
-                        new_x = next_min_x + self.curr_x - curr_min_x
-                    elif old_direction == Direction.UP:
-                        new_x = next_min_x + curr_max_x - self.curr_x - 1
+                    # Calculate new coordinate if we take this step
+                    old_direction = self.facing
+                    if new_direction == Direction.LEFT:
+                        new_x = next_max_x - 1
+                        if old_direction == Direction.UP:
+                            new_y = next_min_y + curr_max_x - self.curr_x - 1
+                        elif old_direction == Direction.DOWN:
+                            new_y = next_min_y + self.curr_x - curr_min_x
+                        elif old_direction == Direction.LEFT:
+                            new_y = next_min_y + self.curr_y - curr_min_y
+                        elif old_direction == Direction.RIGHT:
+                            new_y = next_min_y + curr_max_y - self.curr_y - 1
+                    elif new_direction == Direction.RIGHT:
+                        new_x = next_min_x
+                        if old_direction == Direction.DOWN:
+                            new_y = next_min_y + curr_max_x - self.curr_x - 1
+                        elif old_direction == Direction.UP:
+                            new_y = next_min_y + self.curr_x - curr_min_x
+                        elif old_direction == Direction.RIGHT:
+                            new_y = next_min_y + self.curr_y - curr_min_y
+                        elif old_direction == Direction.LEFT:
+                            new_y = next_min_y + curr_max_y - self.curr_y - 1
+                    elif new_direction == Direction.UP:
+                        new_y = next_max_y - 1
+                        if old_direction == Direction.LEFT:
+                            new_x = next_min_x + curr_max_y - self.curr_y - 1
+                        elif old_direction == Direction.RIGHT:
+                            new_x = next_min_x + self.curr_y - curr_min_y
+                        elif old_direction == Direction.UP:
+                            new_x = next_min_x + self.curr_x - curr_min_x
+                        elif old_direction == Direction.DOWN:
+                            new_x = next_min_x + curr_max_x - self.curr_x - 1
+                    elif new_direction == Direction.DOWN:
+                        new_y = next_min_y
+                        if old_direction == Direction.RIGHT:
+                            new_x = next_min_x + curr_max_y - self.curr_y - 1
+                        elif old_direction == Direction.LEFT:
+                            new_x = next_min_x + self.curr_y - curr_min_y
+                        elif old_direction == Direction.DOWN:
+                            new_x = next_min_x + self.curr_x - curr_min_x
+                        elif old_direction == Direction.UP:
+                            new_x = next_min_x + curr_max_x - self.curr_x - 1
 
             if self.grid[new_y][new_x] == '#':
                 # We hit a wall, time to stop!
@@ -383,7 +394,7 @@ def parse_direction(line):
     return directions
 
 
-def part_1(lines):
+def parse_grid(lines):
     map_width = 0
     directions = None
     grid = []
@@ -402,34 +413,21 @@ def part_1(lines):
     # Add right padding to prevent index errors
     for i, line in enumerate(grid):
         grid[i] = line.ljust(map_width, ' ')
-        
-    solver = Solver(grid, directions)
+
+    return grid, directions
+
+
+def part_1(lines):
+    grid, directions = parse_grid(lines)
+    solver = Solver(grid, directions, normal_wrap=True)
     solver.solve()
     return solver.get_password()
     
 
 def part_2(lines):
-    map_width = 0
-    directions = None
-    grid = []
-    for i, line in enumerate(lines):
-        line = line.rstrip()
-        if not line:
-            continue
-
-        if i == len(lines) - 1:
-            directions = parse_direction(line)
-        else:
-            if len(line) > map_width:
-                map_width = len(line)
-            grid.append(line)
-
-    # Add right padding to prevent index errors
-    for i, line in enumerate(grid):
-        grid[i] = line.ljust(map_width, ' ')
-        
-    solver = Solver(grid, directions)
-    solver.solve(print_output=False)
+    grid, directions = parse_grid(lines)
+    solver = Solver(grid, directions, normal_wrap=False)
+    solver.solve()
     return solver.get_password()
 
 

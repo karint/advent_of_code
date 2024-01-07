@@ -5,10 +5,10 @@ from util import run
 
 SIZE_MIN = 100000
 
-directory_sizes = defaultdict(int)
-directory_children = defaultdict(set)
-
 def part_1(lines):
+    directory_sizes = defaultdict(int)
+    directory_children = defaultdict(set)
+
     dir_list = []
     in_directory = False
     for line in lines:
@@ -48,6 +48,9 @@ TOTAL_SPACE = 70000000
 UNUSED_NEEDED = 30000000
 
 def part_2(lines):
+    directory_sizes = defaultdict(int)
+    directory_children = defaultdict(set)
+    
     dir_list = []
     in_directory = False
     for line in lines:
@@ -76,7 +79,7 @@ def part_2(lines):
                 size += get_size(child)
         return size
     
-    needed_to_free = 30000000 + get_size('/') - TOTAL_SPACE
+    needed_to_free = UNUSED_NEEDED + get_size('/') - TOTAL_SPACE
     all_directories = set(directory_sizes.keys()) | set(directory_children.keys())
     smallest = (None, 0)
     for directory in all_directories:

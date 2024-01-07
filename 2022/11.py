@@ -1,6 +1,7 @@
 import math
 import os
 
+from copy import deepcopy
 from util import run
 
 
@@ -12,7 +13,7 @@ class Monkey(object):
         divisor,
         target_if_true,
         target_if_false,
-        common_divisor=1,
+        lcm=1,
     ):
         self.items = items
         self.operation = operation
@@ -20,16 +21,22 @@ class Monkey(object):
         self.target_if_true = target_if_true
         self.target_if_false = target_if_false
         self.inspect_count = 0
-        self.common_divisor = common_divisor
+        self.lcm = lcm
+
+    def reset_counts(self):
+        self.items = self.original_items
+        self.inspect_count = 0
 
     def test(self, x):
         return x % self.divisor == 0
 
-    def take_round(self, reduce_worry_level):
+    def take_round(self, monkeys, reduce_worry_level=True):
         for item in self.items:
-            worry_level = self.operation(item) % self.common_divisor
+            worry_level = self.operation(item)
             if reduce_worry_level:
                 worry_level = int(worry_level/3.0)
+            else:
+                worry_level %= self.lcm
             target_monkey = self.target_if_true if self.test(worry_level) else self.target_if_false
             self.inspect_count += 1
             self.toss(worry_level, monkeys[target_monkey])
@@ -132,36 +139,25 @@ TEST_MONKEYS = [
 ]
 
 
-monkeys = MONKEYS
-
-
 def part_1(lines):
-    common_divisor = 1
-    for monkey in monkeys:
-        common_divisor *= monkey.divisor
-
-    for monkey in monkeys:
-        monkey.common_divisor = common_divisor
-
+    monkeys = deepcopy(MONKEYS)
     for num_round in range(20):
         for monkey in monkeys:
-            monkey.take_round(True)
+            monkey.take_round(monkeys, reduce_worry_level=True)
 
     inspect_counts = sorted([monkey.inspect_count for monkey in monkeys], reverse=True)
     return inspect_counts[0] * inspect_counts[1]
     
 
 def part_2(lines):
-    common_divisor = 1
+    monkeys = deepcopy(MONKEYS)
+    lcm = math.lcm(*(monkey.divisor for monkey in monkeys))
     for monkey in monkeys:
-        common_divisor *= monkey.divisor
-
-    for monkey in monkeys:
-        monkey.common_divisor = common_divisor
+        monkey.lcm = lcm
 
     for num_round in range(10000):
         for monkey in monkeys:
-            monkey.take_round(False)
+            monkey.take_round(monkeys, reduce_worry_level=False)
 
     inspect_counts = sorted([monkey.inspect_count for monkey in monkeys], reverse=True)
     return inspect_counts[0] * inspect_counts[1]
