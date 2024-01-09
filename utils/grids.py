@@ -51,10 +51,10 @@ def get_cardinal_direction_coords(x, y, directions=None, grid=None, blocked=None
 
 def get_adjacent_coords(x, y):
     """
-    Given x and y, returns a list of tuples of the
+    Given x and y, returns a set of tuples of the
     8 adjacent coordinates.
     """
-    return [
+    return {
         (x - 1, y - 1),
         (x - 1, y),
         (x - 1, y + 1),
@@ -63,7 +63,7 @@ def get_adjacent_coords(x, y):
         (x + 1, y - 1),
         (x + 1, y),
         (x + 1, y + 1),
-    ]
+    }
 
 
 def get_manhattan_distance(coord_1, coord_2):

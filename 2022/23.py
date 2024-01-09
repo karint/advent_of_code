@@ -1,101 +1,88 @@
 import os
 
 from collections import defaultdict
-from util import run
+from util import get_adjacent_coords, run
 
-DIRECTIONS = ['N', 'S', 'W', 'E']
-
+DIRECTION_ORDERS = [
+    ['N', 'S', 'W', 'E'],
+    ['S', 'W', 'E', 'N'],
+    ['W', 'E', 'N', 'S'],
+    ['E', 'N', 'S', 'W'],
+]
 
 class Elf:
     def __init__(self, x, y):
         self.x = x
         self.y = y
         self.proposal = None
+        self.is_done = False
 
     def propose_coord(self, occupied_coords, cardinal_prio):
         self.proposal = None
 
         # Check if any elves around
-        coords_to_check = (
-            (self.x + 1, self.y + 1),
-            (self.x + 1, self.y - 1),
-            (self.x + 1, self.y),
-            (self.x - 1, self.y + 1),
-            (self.x - 1, self.y - 1),
-            (self.x - 1, self.y),
-            (self.x, self.y + 1),
-            (self.x, self.y - 1),
-        )
-        if all(coord not in occupied_coords for coord in coords_to_check):
+        adjacent_coords = get_adjacent_coords(self.x, self.y)
+        if not (occupied_coords & adjacent_coords):
             return self.proposal
 
         # Otherwise, propose a direction
         for direction in cardinal_prio:
             match direction:
                 case 'N':
-                    coords_to_check = (
+                    coords_to_check = {
                         (self.x - 1, self.y - 1),
                         (self.x, self.y - 1),
                         (self.x + 1, self.y - 1),
-                    )
-                    if all(coord not in occupied_coords for coord in coords_to_check):
+                    }
+                    if not coords_to_check & occupied_coords:
                         self.proposal = (self.x, self.y - 1)
-                        break
+                        return self.proposal
                 case 'S':
-                    coords_to_check = (
+                    coords_to_check = {
                         (self.x - 1, self.y + 1),
                         (self.x, self.y + 1),
                         (self.x + 1, self.y + 1),
-                    )
-                    if all(coord not in occupied_coords for coord in coords_to_check):
+                    }
+                    if not coords_to_check & occupied_coords:
                         self.proposal = (self.x, self.y + 1)
-                        break
+                        return self.proposal
                 case 'W':
-                    coords_to_check = (
+                    coords_to_check = {
                         (self.x - 1, self.y - 1),
                         (self.x - 1, self.y),
                         (self.x - 1, self.y + 1),
-                    )
-                    if all(coord not in occupied_coords for coord in coords_to_check):
+                    }
+                    if not coords_to_check & occupied_coords:
                         self.proposal = (self.x - 1, self.y)
-                        break
+                        return self.proposal
                 case 'E':
-                    coords_to_check = (
+                    coords_to_check = {
                         (self.x + 1, self.y - 1),
                         (self.x + 1, self.y),
                         (self.x + 1, self.y + 1),
-                    )
-                    if all(coord not in occupied_coords for coord in coords_to_check):
+                    }
+                    if not coords_to_check & occupied_coords:
                         self.proposal = (self.x + 1, self.y)
-                        break
+                        return self.proposal
 
-        # print('Checking %s: %s...' % (direction, coords_to_check))
-        # print('Elf at %s proposes %s' % ((self.x, self.y), self.proposal))
-        return self.proposal
-
-    def execute_proposal(self):
+    def execute_proposal(self, occupied_coords):
+        occupied_coords.remove((self.x, self.y))
         self.x, self.y = self.proposal
+        occupied_coords.add(self.proposal)
 
 
 class Solver:
-    def __init__(self, elves):
+    def __init__(self, elves, num_rounds=None):
         self.elves = elves
         self.round = 0
         self.is_done = False
-        self.occupied_coords = set()
-        self.recalculate()
+        self.occupied_coords = {(elf.x, elf.y) for elf in self.elves}
 
     def get_size(self):
-        return (self.max_x - self.min_x + 1) * (self.max_y - self.min_y + 1)
+        self.min_x, self.min_y = None, None
+        self.max_x, self.max_y = None, None
 
-    def recalculate(self):
-        self.min_x, self.max_x = None, None
-        self.min_y, self.min_y = None, None
-
-        new_occupied_coords = set()
         for elf in self.elves:
-            new_occupied_coords.add((elf.x, elf.y))
-
             if self.min_x is None:
                 self.min_x = elf.x
                 self.max_x = elf.x
@@ -112,27 +99,27 @@ class Solver:
             if self.max_y < elf.y:
                 self.max_y = elf.y
 
-        if new_occupied_coords == self.occupied_coords:
-            self.is_done = True
-
-        self.occupied_coords = new_occupied_coords
+        return (self.max_x - self.min_x + 1) * (self.max_y - self.min_y + 1)
 
     def conduct_round(self):
-        proposed_coords_count = defaultdict(int)
-        direction_index = self.round % len(DIRECTIONS)
-        directions = DIRECTIONS[direction_index:] + DIRECTIONS[:direction_index]
-        # print(directions)
+        proposed_coords = {}
+        directions = DIRECTION_ORDERS[self.round % 4]
 
+        hold_still = set([None])
         for elf in self.elves:
             proposed = elf.propose_coord(self.occupied_coords, directions)
-            if proposed is not None:
-                proposed_coords_count[proposed] += 1
+            if proposed not in hold_still:
+                if proposed_coords.get(proposed):
+                    hold_still.add(proposed)
+                    del proposed_coords[proposed]
+                else:
+                    proposed_coords[proposed] = elf
 
-        for elf in self.elves:
-            if elf.proposal is not None and proposed_coords_count[elf.proposal] == 1:
-                elf.execute_proposal()
+        self.is_done = True
+        for proposed_coord, elf in proposed_coords.items():
+            elf.execute_proposal(self.occupied_coords)
+            self.is_done = False
 
-        self.recalculate()
         self.round += 1
 
     def print(self):
@@ -144,39 +131,27 @@ class Solver:
         print('-' * (self.max_x - self.min_x + 1))
 
 
-def part_1(lines):
+def parse_elves(lines):
     elves = []
     for y, line in enumerate(lines):
         line = line.strip()
         for x, char in enumerate(line):
             if char == '#':
                 elves.append(Elf(x, y))
+    return elves
 
-    solver = Solver(elves)
-    # solver.print()
 
+def part_1(lines):
+    solver = Solver(parse_elves(lines))
     for round_num in range(10):
-        # print('Round', round_num + 1)
         solver.conduct_round()
-        # solver.print()
-        
     return solver.get_size() - len(solver.occupied_coords)
     
 
 def part_2(lines):
-    elves = []
-    for y, line in enumerate(lines):
-        line = line.strip()
-        for x, char in enumerate(line):
-            if char == '#':
-                elves.append(Elf(x, y))
-
-    solver = Solver(elves)
-
+    solver = Solver(parse_elves(lines))
     while not solver.is_done:
-        # print('Round', solver.round + 1)
         solver.conduct_round()
-        
     return solver.round
 
 
