@@ -1,0 +1,9 @@
+*.pyc
+*.txt
+.DS_Store
+2020/
+2021/
+2022/16_old.py
+aoc-leaderboard/
+outputs/
+zakj_aoc/
