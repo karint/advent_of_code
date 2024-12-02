@@ -7,6 +7,7 @@ from util import test_all
 
 CORRECT_ANSWERS = [
     ('01', 2970687, 23963899),
+    ('02', 321, 386),
 ]
 
 

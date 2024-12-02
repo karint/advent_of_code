@@ -1,99 +1,57 @@
 """
-Part 1:
-Part 2:
+Part 1: Count how many levels in a report are deemed "safe".
+Part 2: Count how many levels in a report are safe if up to 1 level could be removed.
 """
 import os
 
 from util import run
 
 
-def part_1(lines):
-    total = 0
-
-    # for report in lines:
-    #     good = True
-    #     levels = report.split(' ')
-    #     asc = sorted(levels)
-    #     desc = sorted(levels, reverse=True)
-    #     lvl_str = ' '.join(levels)
-    #     if not (' '.join(asc) == lvl_str or ' '.join(desc) == lvl_str):
-    #         good = False
-    #         continue
-
-    #     levels = list(map(int, levels))
-    #     for i in range(len(levels) - 1):
-    #         diff = abs(levels[i] - levels[i + 1])
-    #         if diff > 3 or diff < 1:
-    #             good = False
-
-    #     if good:
-    #         total += 1
-
-        # print(report, good)
+def _parse_levels(report):
+    return [int(l) for l in report.strip().split(' ')]
 
 
-    for report in lines:
-        is_asc = None
-        safe = True
-        levels = report.split(' ')
-        for i in range(len(levels) - 1):
-            a = int(levels[i])
-            b = int(levels[i + 1])
-            if i == 0:
-                is_asc = b > a
-            else:
-                if (is_asc and b <= a) or (not is_asc and a <= b):
-                    safe = False
-                    break
-
-            if abs(a - b) > 3 or abs(a - b) < 1:
-                safe = False
-                break
-
-        if safe:
-            total += 1
-
-    return total
-
-
-def is_safe(levels):
-    is_asc = None
+def _is_safe(levels):
     safe = True
-    for i in range(len(levels) - 1):
-        a = int(levels[i])
-        b = int(levels[i + 1])
-        if i == 0:
-            is_asc = b > a
-        else:
-            if (is_asc and b <= a) or (not is_asc and a <= b):
-                safe = False
-                break
+    last_level = levels[0]
+    last_diff = None
+    for level in levels[1:]:
+        diff = level - last_level
 
-        if abs(a - b) > 3 or abs(a - b) < 1:
+        if (
+            abs(diff) < 1 or
+            abs(diff) > 3 or
+            (last_diff is not None and last_diff * diff < 0)
+        ):
             safe = False
             break
+
+        last_level = level
+        last_diff = diff
 
     return safe
 
 
+def part_1(lines):
+    return sum(
+        1 if _is_safe(_parse_levels(report)) else 0
+        for report in lines
+    )
+
+
 def part_2(lines):
     total = 0
+
     for report in lines:
-        safe = False
-        levels = report.strip().split(' ')
-        # print(is_safe(levels), levels)
-        if is_safe(levels):
-            safe = True
-
-        if not safe:
-            for i in range(len(levels)):
-                new_levels = levels[:i] + levels[i+1:]
-                if is_safe(new_levels):
-                    safe = True
-                    break
-
-        if safe:
+        levels = _parse_levels(report)
+        if _is_safe(levels):
             total += 1
+            continue
+
+        for index_to_ignore in range(len(levels)):
+            if _is_safe(levels[:index_to_ignore] + levels[index_to_ignore + 1:]):
+                total += 1
+                break
 
     return total
 
