@@ -9,31 +9,23 @@ import os
 
 from util import run
 
-REGEX = r'mul\(([0-9][0-9]?[0-9]?),([0-9][0-9]?[0-9]?)\)'
+REGEX = r'mul\(([0-9]{1,3}),([0-9]{1,3})\)'
 
 
 def part_1(lines):
-    command = ''.join(lines)
-    matches = re.findall(REGEX, command)
-
-    answer = 0
-    for match in matches:
-        answer += int(match[0])*int(match[1])
-    return answer
+    matches = re.findall(REGEX, ''.join(lines))
+    return sum(int(match[0]) * int(match[1]) for match in matches)
 
 
 def part_2(lines):
+    between_dos = ''.join(lines).split('do()')
+
     answer = 0
-    command = ''.join(lines)
-    between_dos = command.split('do()')
-
-    for substring in between_dos:
-        parts = substring.split("don't()")
-        enabled = parts[0]
-        matches = re.findall(REGEX, enabled)
-
-        for match in matches:
-            answer += int(match[0])*int(match[1])
+    for command in between_dos:
+        parts = command.split("don't()")
+        # Part before "don't" is enabled (including if no "don't"), rest is not
+        matches = re.findall(REGEX, parts[0])
+        answer += sum(int(match[0]) * int(match[1]) for match in matches)
 
     return answer
 
