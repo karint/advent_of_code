@@ -4,7 +4,7 @@ Part 2:
 """
 import os
 
-from util import run
+from util import rotate_45, rotate_90, run
 
 WORD = 'XMAS'
 
@@ -16,41 +16,10 @@ def part_1(lines):
     for _ in range(4):
         total += sum(line.count(WORD) for line in grid)
 
-        width = len(grid[0])
-        height = len(grid)
-
-        # Rotate original grid 45º
-        diag_grid = []
-        for i in range(height):
-            temp = []
-            length_of_row = i + 1
-            for j in range(length_of_row):
-                temp.append(grid[length_of_row - j - 1][j])
-            diag_grid.append(''.join(temp))
-            # print(''.join(temp))
-
-            if i == height - 1:
-                continue
-
-            temp = []
-            for j in range(length_of_row):
-                temp.append(grid[height - (length_of_row - j - 1) - 1][width - j - 1])
-            temp.reverse()
-            diag_grid.append(''.join(temp))
-            # print(''.join(temp))
-
+        diag_grid = rotate_45(grid)
         total += sum(line.count(WORD) for line in diag_grid)
 
-        # Rotate original grid 90º
-        new_grid = []
-        for j in range(height):
-            temp = []
-            for i in range(width):
-                temp.append(grid[i][width - j - 1])
-            new_grid.append(''.join(temp))
-            # print(''.join(temp))
-
-        grid = new_grid
+        grid = rotate_90(grid)
 
     return total
 

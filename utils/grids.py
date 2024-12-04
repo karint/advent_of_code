@@ -70,3 +70,49 @@ def get_manhattan_distance(coord_1, coord_2):
     dx = abs(coord_1[0] - coord_2[0])
     dy = abs(coord_1[1] - coord_2[1])
     return dx + dy
+
+
+def rotate_45(grid):
+    """
+    Returns a grid representing the original grid rotated 45º clockwise.
+    Only represents the content per row and does not preserve geometric integrity.
+    Each row is a string, not a list.
+
+    Example: rotate_45(['abc', 'def']) -> ['c', 'bf', 'ae', 'd']
+    """
+    width = len(grid[0])
+    height = len(grid)
+
+    diag_grid = []
+    
+    for i in range(height):
+        length_of_row = i + 1
+        diag_grid.append(''.join(
+            grid[length_of_row - j - 1][j]
+            for j in range(length_of_row)
+        ))
+
+    for i in range(height - 1):
+        length_of_row = height - i - 1
+        diag_grid.append(''.join(
+            grid[height - (length_of_row - j - 1) - 1][width - j - 1]
+            for j in reversed(range(length_of_row))
+        ))
+
+    return diag_grid
+
+
+def rotate_90(grid):
+    """
+    Returns a grid of chars that is the original grid rotated 90º clockwise.
+    Each row is a string, not a list.
+
+    Example: rotate_90(['abc', 'def']) -> ['da', 'eb', 'fc']
+    """
+    width = len(grid[0])
+    height = len(grid)
+
+    return [
+        ''.join(grid[height - i - 1][j] for i in range(height))
+        for j in range(width)
+    ]
