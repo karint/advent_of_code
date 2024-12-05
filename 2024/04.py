@@ -1,6 +1,6 @@
 """
-Part 1:
-Part 2:
+Part 1: Find all instances of XMAS in the word find.
+Part 2: Find all instances of two crossing MAS in word find.
 """
 import os
 
