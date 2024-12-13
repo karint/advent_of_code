@@ -1,32 +1,12 @@
 """
-Part 1:
-Part 2:
+Part 1: Determine number of stones after 25 blinks.
+Part 2: Determine number of stones after 75 blinks.
 """
 import os
 import functools
 
 from util import run
 
-def part_1(lines):
-    num_blinks = 25
-    line = lines[0].strip()
-    stones = [int(num) for num in line.split(' ')]
-
-    for i in range(num_blinks):
-        new_stones = []
-        for s in stones:
-            if s == 0:
-                new_stones.append(1)
-            elif len(str(s)) % 2 == 0:
-                stone_str = str(s)
-                half_size = len(stone_str)//2
-                new_stones.append(int(stone_str[:half_size]))
-                new_stones.append(int(stone_str[half_size:]))
-            else:
-                new_stones.append(s * 2024)
-        stones = new_stones
-
-    return len(stones)
 
 @functools.cache
 def num_future_stones(s, blinks_left):
@@ -49,11 +29,17 @@ def num_future_stones(s, blinks_left):
     return num_future_stones(s * 2024, blinks_left)
 
 
-def part_2(lines):
-    num_blinks = 75
-    line = lines[0].strip()
-    stones = [int(num) for num in line.split(' ')]
+def get_num_stones(lines, num_blinks):
+    stones = [int(num) for num in lines[0].strip().split(' ')]
     return sum(num_future_stones(s, num_blinks) for s in stones)
+
+
+def part_1(lines):
+    return get_num_stones(lines, 25)
+
+
+def part_2(lines):
+    return get_num_stones(lines, 75)
 
 
 if __name__ == '__main__':
