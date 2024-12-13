@@ -6,18 +6,16 @@ import os
 
 from util import rotate_45, rotate_90, run
 
-WORD = 'XMAS'
-
 
 def part_1(lines):
     total = 0
 
     grid = [l.strip() for l in lines]
     for _ in range(4):
-        total += sum(line.count(WORD) for line in grid)
+        total += sum(line.count('XMAS') for line in grid)
 
         diag_grid = rotate_45(grid)
-        total += sum(line.count(WORD) for line in diag_grid)
+        total += sum(line.count('XMAS') for line in diag_grid)
 
         grid = rotate_90(grid)
 
@@ -42,11 +40,11 @@ def part_2(lines):
             sw = grid[i + 1][j - 1]
             se = grid[i + 1][j + 1]
 
-            if (
-                (nw == 'M' and ne == 'S' and sw == 'M' and se == 'S') or
-                (nw == 'M' and ne == 'M' and sw == 'S' and se == 'S') or
-                (nw == 'S' and ne == 'M' and sw == 'S' and se == 'M') or
-                (nw == 'S' and ne == 'S' and sw == 'M' and se == 'M')
+            if (nw, ne, sw, se) in (
+                ('M', 'S', 'M', 'S'),
+                ('M', 'M', 'S', 'S'),
+                ('S', 'M', 'S', 'M'),
+                ('S', 'S', 'M', 'M'),
             ):
                 total += 1
 
