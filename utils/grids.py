@@ -9,7 +9,7 @@ class Direction:
     UP = 'UP'
 
 
-OPPOSITE_DIRECTIONS ={
+OPPOSITE_DIRECTIONS = {
     Direction.DOWN: Direction.UP,
     Direction.LEFT: Direction.RIGHT,
     Direction.RIGHT: Direction.LEFT,
