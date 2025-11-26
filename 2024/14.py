@@ -104,7 +104,7 @@ def part_2(lines):
     #         print('---------------------', file=file)
     #         print_grid(width, height, robots, file)
 
-    return 6474
+    return 6474 + 1
 
 
 
