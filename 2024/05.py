@@ -78,8 +78,6 @@ def part_2(lines):
                 num_earlier_than_map[a] = num_earlier_than
 
                 new_order = sorted(test_order, key=lambda n: num_earlier_than_map[n], reverse=True)
-                print(new_order)
-
 
             total += int(new_order[int((len(new_order) - 1)/2)])
 

@@ -65,7 +65,7 @@ def part_1(lines):
     count = 0
     for key_height in key_heights:
         for lock_height in lock_heights:
-            print(key_height, lock_height)
+            # print(key_height, lock_height)
             if all(
                 key_height[i] + lock_height[i] < height - 1
                 for i in range(width)
@@ -76,7 +76,7 @@ def part_1(lines):
 
 
 def part_2(lines):
-    return part_1(lines)
+    return
 
 
 if __name__ == '__main__':

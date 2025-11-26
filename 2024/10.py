@@ -35,7 +35,6 @@ def get_trailhead_score(starting_coords, trail_map):
             curr_height += 1
         total_score += len(dest_coords)
 
-        print(starting_x, starting_y, trail_score)
     return total_score
 
 
@@ -64,7 +63,6 @@ def get_trailhead_score_2(starting_coords, trail_map):
             curr_height += 1
         total_score += trail_score
 
-        print(starting_x, starting_y, trail_score)
     return total_score
 
 

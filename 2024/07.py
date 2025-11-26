@@ -28,7 +28,6 @@ def is_possible_1(rest, result):
 def part_1(lines):
     total = 0
     for line in lines:
-        print(line)
         line = line.strip()
         result, rest = line.split(': ')
         result = int(result)
@@ -43,7 +42,6 @@ def part_1(lines):
 
 
 def is_possible_2(rest, result):
-    print(rest, result)
     if len(rest) == 1:
         return rest[0] == result
 

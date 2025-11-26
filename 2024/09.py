@@ -19,7 +19,6 @@ def part_1(lines):
             curr_id += 1
         else:
             blocks += ['.'] * int(num)
-    print(''.join(map(str, blocks)))
 
     # Move files
     final_map = []
@@ -34,8 +33,6 @@ def part_1(lines):
                 take_from_index -= 1
         else:
             final_map.append(char)
-
-    print(''.join(map(str, final_map)))
 
     return sum(
         index * int(num) for index, num in enumerate(final_map)
@@ -84,7 +81,6 @@ def part_2(lines):
 
 
     final_str = ''.join(str(char) * length for char, length in final_map).rstrip('.')
-    print(final_str)
 
     # Wrong: 85630153184
 

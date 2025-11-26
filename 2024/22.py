@@ -54,7 +54,7 @@ def part_1(lines):
         secret = int(line)
         for i in range(2000):
             secret = get_next_secret(int(secret))
-        print(line, secret)
+        # print(line, secret)
         answer += secret
         
     return answer

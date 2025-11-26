@@ -82,28 +82,29 @@ def part_2(lines):
     first time both of these series would converge. I jumped to that picture that behold, a tree!
     Then I just added one since things were 0-indexed.
     """
-    robots = []
-    width = 101
-    height = 103
 
-    for line in lines:
-        line = line.strip()
-        pos, vel = line.split(' ')
-        x, y = map(int, pos[2:].split(','))
-        dx, dy = map(int, vel[2:].split(','))
-        robots.append(Robot(x, y, dx, dy))
+    # robots = []
+    # width = 101
+    # height = 103
 
-    with open('temp2.txt', 'w+') as file:
-        for s in range(10000):
-            for robot in robots:
-                robot.move(width, height)
+    # for line in lines:
+    #     line = line.strip()
+    #     pos, vel = line.split(' ')
+    #     x, y = map(int, pos[2:].split(','))
+    #     dx, dy = map(int, vel[2:].split(','))
+    #     robots.append(Robot(x, y, dx, dy))
 
-            print('---------------------', file=file)
-            print(s, file=file)
-            print('---------------------', file=file)
-            print_grid(width, height, robots, file)
+    # with open('temp2.txt', 'w+') as file:
+    #     for s in range(10000):
+    #         for robot in robots:
+    #             robot.move(width, height)
 
-    return
+    #         print('---------------------', file=file)
+    #         print(s, file=file)
+    #         print('---------------------', file=file)
+    #         print_grid(width, height, robots, file)
+
+    return 6474
 
 
 

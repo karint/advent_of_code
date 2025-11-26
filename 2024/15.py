@@ -372,7 +372,6 @@ def part_1(lines):
             elif (x, y) in wall_coords:
                 char = '#'
             temp_str += char
-        print(temp_str)
 
     return sum(b.x + b.y * 100 for b in boxes)
 
@@ -393,7 +392,6 @@ def print_grid(grid, robot, wall_coords, boxes):
             elif (x, y) in wall_coords:
                 char = '#'
             temp_str += char
-        print(temp_str)
 
 
 def part_2(lines):

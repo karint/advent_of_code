@@ -60,7 +60,6 @@ def part_1(lines):
         area = len(coords_in_region)
         perimeter = get_perimeter(coords_in_region, grid)
         price = area * perimeter
-        print(grid[region[1]][region[0]], area, perimeter, price)
         total_price += price
 
     return total_price
@@ -135,7 +134,6 @@ def part_2(lines):
         area = len(coords_in_region)
         sides = get_sides(coords_in_region, grid)
         price = area * sides
-        print(grid[region[1]][region[0]], area, sides, price)
         total_price += price
 
     return total_price
