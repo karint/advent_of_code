@@ -1,6 +1,6 @@
 """
-Part 1: 
-Part 2: 
+Part 1: Count how many times a dial ends on 0.
+Part 2: Count how many times a dial passes through 0.
 """
 import os
 
