@@ -7,44 +7,39 @@ import os
 from collections import Counter
 from util import find_digits, run
 
+DIAL_START = 50
+DIAL_TOTAL_NUMS = 100
+
 
 def part_1(lines):
-    answer = 50
-    total = 0
+    dial = DIAL_START
+    count = 0
     for line in lines:
-        steps = int(line[1:])
-        steps = steps % 100
+        ticks = int(line[1:])
         if 'L' in line:
-            answer -= steps
-        else:
-            answer += steps
-        if answer < 0:
-            answer = 100 + answer
-        if answer > 99:
-            answer %= 100
-        if answer == 0:
-            total += 1
+            ticks *= -1
+        dial += ticks
+        dial %= DIAL_TOTAL_NUMS
+        if dial == 0:
+            count += 1
 
-    return total
+    return count
 
 def part_2(lines):
-    answer = 50
-    total = 0
+    dial = DIAL_START
+    count = 0
     for line in lines:
-        steps = int(line[1:])
-        for i in range(steps):
+        ticks = int(line[1:])
+        for i in range(ticks):
             if 'L' in line:
-                answer -= 1
+                dial -= 1
             else:
-                answer += 1
-            if answer < 0:
-                answer = 100 + answer
-            if answer > 99:
-                answer %= 100
-            if answer == 0:
-                total += 1
+                dial += 1
+            dial %= DIAL_TOTAL_NUMS
+            if dial == 0:
+                count += 1
 
-    return total
+    return count
 
 
 
