@@ -13,16 +13,11 @@ def max_joltage(line, digits=12):
     if digits == 1:
         return max(int(d) for d in line)
 
-    curr_max = 0
     for digit in DIGITS:
         try:
             num_index = line.index(digit)
-
             if 0 <= num_index <= len(line) - digits:
-                rest = max_joltage(line[num_index + 1:], digits=digits-1)
-                curr_max = max(curr_max, int(line[num_index] + str(rest)))
-                return curr_max
-
+                return int(line[num_index] + str(max_joltage(line[num_index + 1:], digits=digits-1)))
         except ValueError:
             continue
 
