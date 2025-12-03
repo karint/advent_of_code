@@ -4,8 +4,7 @@ Part 2: Find highest integer formed by 12 digits of a string.
 """
 import os
 
-from collections import Counter
-from util import find_digits, run
+from util import run
 
 DIGITS = '9876543210'
 
