@@ -10,72 +10,32 @@ from util import find_digits, run
 DIGITS = '9876543210'
 
 
-def max_joltage(line):
-    curr_max = None
-    num_index, second_num_index = None, None
-    for i, digit in enumerate(DIGITS):
-        try:
-            num_index = line.index(digit)
-
-            if num_index is not None and num_index >= 0 and num_index < len(line) - 1:
-                second_num = max(int(line[j]) for j in range(num_index + 1, len(line)))
-
-                new_max = int(line[num_index] + str(second_num))
-                if curr_max is None:
-                    curr_max = new_max
-                else:
-                    curr_max = max(curr_max, new_max)
-
-        except ValueError:
-            continue
-    return curr_max
-
-
-def max_joltage_2(line, remaining_digits=12):
-    if remaining_digits == 1:
+def max_joltage(line, digits=12):
+    if digits == 1:
         return max(int(d) for d in line)
 
-    curr_max = None
-    num_indices = [None] * remaining_digits
-
-    for i, digit in enumerate(DIGITS):
+    curr_max = 0
+    for digit in DIGITS:
         try:
             num_index = line.index(digit)
 
-            if num_index is not None and num_index >= 0 and num_index <= len(line) - remaining_digits:
-                rest = max_joltage_2(line[num_index + 1:], remaining_digits=remaining_digits-1)
-
-                new_max = int(line[num_index] + str(rest))
-                if curr_max is None:
-                    curr_max = new_max
-                else:
-                    curr_max = max(curr_max, new_max)
+            if 0 <= num_index <= len(line) - digits:
+                rest = max_joltage(line[num_index + 1:], digits=digits-1)
+                curr_max = max(curr_max, int(line[num_index] + str(rest)))
+                return curr_max
 
         except ValueError:
             continue
-                    
-        if curr_max:
-            return curr_max
 
-    return curr_max
+    return int(line)
 
 
 def part_1(lines):
-    count = 0
-    for line in lines:
-        max_j = max_joltage(line.strip())
-        count += max_j
-
-    return count
+    return sum(max_joltage(line.strip(), digits=2) for line in lines)
 
 
 def part_2(lines):
-    count = 0
-    for line in lines:
-        max_j = max_joltage_2(line.strip())
-        count += max_j
-
-    return count
+    return sum(max_joltage(line.strip(), digits=12) for line in lines)
 
 
 if __name__ == '__main__':
