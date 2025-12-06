@@ -9,58 +9,44 @@ from util import run
 
 
 def part_1(lines):
-	problems = []
+	problems = [[] for _ in range(len(lines[0].split()))]
 	for line in lines:
 		parts = line.strip().split()
-		if not problems:
-			problems = [[] for _ in range(len(parts))]
-
 		for i, part in enumerate(parts):
 			problems[i].append(part)
 
-	count = 0
+	total = 0
 	for problem in problems:
-		numbers = map(int, problem[:-1])
 		op = sum if problem[len(problem) - 1] == '+' else prod
-		count += op(numbers)
-
-	return count
+		nums = map(int, problem[:-1])
+		total += op(nums)
+	return total
 
 
 def part_2(lines):
-	max_len = 0
-	rows = []
+	rows, max_len = [], 0
 	for line in lines:
 		line = line.rstrip()
 		max_len = max(max_len, len(line))
 		rows.append(line)
 
-	count = 0
-	op = None
-	nums = []
+	total, op, nums = 0, None, []
 	for num_index in reversed(range(max_len)):
 		num_str = ''
-
-		# Check each row to see if there's a character in the given col,
-		# starting from the right
 		for row in rows:
-			if len(row) > num_index:
-				char = row[num_index]
-				if char in ('+', '*'):
-					op = sum if char == '+' else prod
-				else:
-					num_str += char
+			char = row[num_index] if len(row) > num_index else ''
+			if char in ('+', '*'):
+				op = sum if char == '+' else prod
+			else:
+				num_str += char
 
-		num_str = num_str.strip()
-
-		if num_str:
+		if num_str.strip():
 			nums.append(int(num_str))
-		else:
-			count += op(nums)
+		else: # Column of spaces; execute operation
+			total += op(nums)
 			nums.clear()
-
-	count += op(nums)
-	return count
+	
+	return total + op(nums)
 
 
 if __name__ == '__main__':
