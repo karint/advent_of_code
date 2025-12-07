@@ -1,6 +1,6 @@
 """
-Part 1: 
-Part 2: 
+Part 1: Count how many times a beam of light splits into unique new beams.
+Part 2: Count the number of possible paths through splitters.
 """
 import os
 
@@ -9,25 +9,21 @@ from util import run
 
 
 def part_1(lines):
-    split_count = 0
-    grid = []
-    start = None
-    splitters = set()
-
     width = len(lines[0])
     height = len(lines)
-
     def is_in_grid(x, y):
         return 0 <= x < width and 0 <= y < height
 
+    start = None
+    splitters = set()
     for y, row in enumerate(lines):
-        grid.append(row.strip());
         for x, char in enumerate(row):
             if char == 'S':
                 start = (x, y)
             elif char == '^':
                 splitters.add((x, y))
 
+    split_count = 0
     beams = set()
     beams.add(start)
     while beams:
@@ -38,37 +34,31 @@ def part_1(lines):
             if down in splitters:
                 left = (bx - 1, by + 1)
                 right = (bx + 1, by + 1)
-                split = False
                 if is_in_grid(*left):
                     new_beams.add(left)
                     split = True
                 if is_in_grid(*right):
                     new_beams.add(right)
                     split = True
-
-                if split:
-                    split_count += 1
             elif is_in_grid(*down):
                 new_beams.add(down)
+
+            if split:
+                split_count += 1
         beams = new_beams
 
     return split_count
 
 
 def part_2(lines):
-    path_count = 0
-    grid = []
-    start = None
-    splitters = set()
-
     width = len(lines[0])
     height = len(lines)
-
     def is_in_grid(x, y):
         return 0 <= x < width and 0 <= y < height
 
+    start = None
+    splitters = set()
     for y, row in enumerate(lines):
-        grid.append(row.strip());
         for x, char in enumerate(row):
             if char == 'S':
                 start = (x, y)
