@@ -85,7 +85,7 @@ def rectangle_in_shape(vertices, sx1, sy1, sx2, sy2):
 
     return True
 
-
+MEMORY = {}
 def is_inside_blocky_polygon(vertices, x, y):
     """
     Uses ray casting at a 45º angle to determine if the given point
@@ -95,6 +95,8 @@ def is_inside_blocky_polygon(vertices, x, y):
     """
     # Cast a ray at a -45º angle to the point. This means slope is -1 if
     # we want to be able to maintain (0, 0) coming from the top left.
+    if (x, y) in MEMORY:
+        return MEMORY[(x, y)]
 
     # Using y = mx + b -> y = -x + b, we can find b with y + x,
     intercept = y + x
@@ -105,6 +107,7 @@ def is_inside_blocky_polygon(vertices, x, y):
 
         # If the point is a vertex, it's inside
         if (x, y) in ((x1, y1), (x2, y2)):
+            MEMORY[(x, y)] = True
             return True
 
         is_horizontal = None
@@ -163,6 +166,7 @@ def is_inside_blocky_polygon(vertices, x, y):
                 ):
                     is_inside = not is_inside
 
+    MEMORY[(x, y)] = is_inside
     return is_inside
 
 
@@ -179,8 +183,8 @@ def part_2(lines):
     num_vertices = len(red_coords)
     total_to_test = num_vertices * num_vertices
     tested = 0
-    for x1, y1 in red_coords:
-        for x2, y2 in red_coords:
+    for i, (x1, y1) in enumerate(red_coords):
+        for x2, y2 in red_coords[i + 1:]:
             # Only measure if the other points are within the polygon
             if (
                 is_inside_blocky_polygon(red_coords, x1, y2) and
